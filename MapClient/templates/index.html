@@ -1,0 +1,28 @@
+{% extends 'clientBase.html' %}
+
+{% block title%}MapaUCM{%endblock%}
+
+{% block MapaUCM %}
+<div id="map" style="height: 600px; width: 600px;"></div>
+{{ Buildings|json_script:"buildings_json"}}
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    document.addEventListener('DOMContentLoaded',() => 
+    {
+        
+        let map = createMap([-35.43559,-71.61971], 17);
+        let buildings = JSON.parse(document.getElementById('buildings_json').textContent);
+        let markersGroup = L.featureGroup().addTo(map);
+        markersGroup.clearLayers();
+        for (let building of buildings){
+            L.marker([building.point__lat,building.point__lon]).addTo(markersGroup).bindPopup('<i>'+building.name+'</i><br><a   onclick="HicieronClick3('+building.id+')" >informacion</a>')
+        };
+        
+    });
+</script>
+    
+{% endblock %}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title%}{%endblock%}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}" />
+    <script src="{% static 'leaflet/leaflet.js' %}"></script>
+    
+    
+	
+	<link href="{% static 'bootstrap-5.0.2-dist/css/bootstrap.min.css' %}" rel="stylesheet">
+	<script src="{% static 'bootstrap-5.0.2-dist/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'mapjs/mapscript.js' %}"></script>
+    <script src="{% static 'mapjs/mapscriptreload.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'bootstrap-icons-1.10.4\font\bootstrap-icons.css' %}">
+    
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid " style="text-align: center">
+            <div class="col">
+                <button class="navbar-toggler d-block" type="button" data-bs-toggle="offcanvas" href="#SideBar" role="button" aria-expanded="false" aria-controls="SideBar"><span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+            <div class="col">
+                <a class="navbar-brand">
+                    Mapa Universidad
+                </a>
+            </div>
+            <div class="col"></div>
+        </div>
+    </nav>
+    <div class="offcanvas offcanvas-start bg-dark text-white" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="SideBar">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title" id="SideBarTitle"><a class=" text-white text-lg text-decoration-none" style="font-size: 40px;">Menu</a></h5>
+          <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body" id="A">
+            <ul class="nav nav-pills flex-column mb-sm-auto mb-0  align-items-sm-start" id="menu">
+                <li class="nav-item">
+                    <a href="{% url 'adminIndex'%}" class="nav-link align-middle px-0">
+                        <i class="fs-4 bi-house"></i>Inicio
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'viewEdification'%}" class="nav-link align-middle px-0">
+                        <i class="fs-4 bi-building"></i>Administrar Edificaciones
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-center">
+        {% block contenedorPrincipal %}
+
+        {% endblock %}
+        </div>
+    </div>
+    {% block scripts %}
+            
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,494 @@
+{% extends 'adminBase.html' %}
+
+{% block title%}MapaUCM{%endblock%}
+
+{% block contenedorPrincipal %}
+{% csrf_token %}
+<div class="col">
+    <div class="row">
+        <div class="d-flex justify-content-center">
+            <div id="map" style="height: 600px; width: 600px;"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-primary" onclick="saveData(link)" role="button">Guardar Cambios</a>
+        </div>
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#buildingModal" role="button">prueba modal</a>
+        </div>
+    </div>
+    
+</div>
+{% comment %}
+    EL SIGUIENTE MODAL ES PARA LAS OPCIONES O CONTROL DE CAPAS, ESTE CONTIENE CKECKBOX QUE ACTIVAN O DESACTIVAN CAPAS
+{% endcomment %}
+
+<div class="modal fade" id="layersModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="layersModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h1 class="modal-title fs-5" id="layersModalLabel">Modal title</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% comment %}
+                    BODY CON LAS OPCIONES
+                {% endcomment %}
+                <div class="form-check">
+                    <input class="form-check-input" onchange="quitar(this.checked,[routePoints,routesPolylines])" type="checkbox" value="" id="flexCheckDefault" checked>
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Caminos
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" onchange="quitar(this.checked,[buildings])" type="checkbox" value="" id="flexCheckDefault" checked>
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Edificios
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" onchange="quitar(this.checked,[buildingPoints,buildingPolylines])" type="checkbox" value="" id="flexCheckDefault" checked>
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Edificios(Herramienta)
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% comment %}
+    EL SIGUIENTE MODAL ES PARA ACTIVAR LA HERRAMIENTA QUE SE DESEA UTILIZAR
+{% endcomment %}
+
+<div class="modal fade" id="toolsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="toolsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h1 class="modal-title fs-5" id="toolsModalLabel">Modal title</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% comment %}
+                    BODY CON LAS OPCIONES Herramientas
+                {% endcomment %}
+                <div class="form-check">
+                    <input class="form-check-input" value="1" onchange="CambiarOpcion(this.value)" type="radio" name="flexRadioDefault" id="herramientaCaminos" checked>
+                    <label class="form-check-label" for="herramientaCaminos">
+                        Herramienta de Caminos
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" value="2" onchange="CambiarOpcion(this.value)" type="radio" name="flexRadioDefault" id="herramientaEdificios">
+                    <label class="form-check-label" for="herramientaEdificios">
+                        Herramienta de Edificios
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% comment %}
+    EL SIGUIENTE MODAL SE UTILIZA PARA AÑADIR EDIFIIOS A LAS ESTRUCTURAS
+{% endcomment %}
+<div class="modal fade" id="buildingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="buildingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="buildingModalLabel">Añadir Edificacion a estructura</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% comment %}
+                    BODY CON LAS OPCIONES PARA AÑADIR NOMBRE DE EDIFICIO O SALA A ESTRUCTURA 
+                {% endcomment %}
+                <select id="selectorEdificacion" class="form-select form-select-scrollable-menu" aria-label="Default select example">
+                    <option selected>Selecciona una edificacion</option>
+                    {% for Edif in listaEdificaciones %}
+                        <option value="{{Edif.id}}">{{Edif.nombre}}</option>
+                    {% endfor %}
+                    
+                </select>
+                <div class="d-flex justify-content-center mt-2">
+                    <button type="button" onclick="asociarEdificacionAEstructura()" class="btn btn-outline-dark" data-bs-dismiss="modal" aria-label="Close">Seleccionar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ puntosMapa|json_script:"puntosMapa_json"}}
+{{ lineasMapa|json_script:"lineasMapa_json"}}
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    
+    var link = "{% url 'saveData' %}"
+    console.log(link);
+    var map = createMap([-35.43559,-71.61971], 17);
+    //Variables de opociones
+    var opcionesTrabajo = "1";
+    //Caminos
+    var routesPolylines = L.featureGroup().addTo(map);
+    var routePoints = L.featureGroup().addTo(map);
+
+    //Edificios
+    var buildings = L.featureGroup().addTo(map);
+
+    //Variables de creacion edificios nuevos
+    var buildingPolylines = L.featureGroup().addTo(map);
+    var buildingPoints = L.featureGroup().addTo(map);
+    var selectedBuild = null;
+    //var buildingSelectedPoint = null;
+
+    //Control customizado
+    var CustomControl = customCtrl(map);
+    new CustomControl({position: 'topright'}).addTo(map);
+
+    //Grupo de layers borrados
+    var deletedLayers = L.featureGroup()
+
+    //Se rellena el mapa
+    RellenarMapa()
+    //Auxiliares de Caminos y Edificios
+    var newRoute = false;
+    var selectedCircle = null;
+    var lastCircle = null;
+    var secondLastCircle = null;
+
+    //Herramientas al hacer click en el mapa
+    map.on('click', function(e) 
+    {
+        //console.log(opcionesTrabajo);
+        if (e.originalEvent.target.tagName.toLowerCase() != 'div') {
+                return;
+            }
+        if (opcionesTrabajo==="1")//Construccion de caminos 
+        {
+            var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint'}).addTo(routePoints);
+            if (routePoints.getLayers().length > 1 && newRoute === false) {
+                if (lastCircle != null) {
+                    secondLastCircle = lastCircle;
+                    lastCircle = routePoints.getLayers()[routePoints.getLayers().length - 1];
+                    var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
+                }
+                else
+                {
+                    lastCircle = routePoints.getLayers()[routePoints.getLayers().length - 1];
+                    newRoute = false;
+                }
+            }else{
+                lastCircle = routePoints.getLayers()[routePoints.getLayers().length - 1];
+                newRoute = false;
+            }
+        } else if (opcionesTrabajo==="2")//Construccion de Edificios 
+        {
+            var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint',color:"green"}).addTo(buildingPoints);
+            console.log("hola");
+            if (lastCircle != null) {
+                secondLastCircle = lastCircle;
+                lastCircle = buildingPoints.getLayers()[buildingPoints.getLayers().length - 1];
+                estructuraEdificio();
+                //var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(buildingPolylines);
+            }
+            else
+            {
+                lastCircle = buildingPoints.getLayers()[buildingPoints.getLayers().length - 1];
+                newRoute = false;
+            }
+        }
+    });
+    //Al hacer click en un circulo de camino
+    routePoints.on('click', function(e) 
+    {
+        if (e.layer != lastCircle) {
+            console.log("distintos")
+            secondLastCircle = lastCircle;
+            lastCircle = e.layer;
+            var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
+            L.DomEvent.stopPropagation(e);
+        } else {
+            console.log("Iguales")
+            L.DomEvent.stopPropagation(e);
+        }
+        
+    });
+
+    //Funcion click derecho de puntos de camino que muestra las opciones que se pueden realizar
+    routePoints.on('contextmenu', function(e) 
+    {
+        RoutePointsOptions(e,map);
+    });
+
+    map.on('contextmenu', function(e) 
+    {
+        newRoute = true;
+    });
+
+    //Funciones para creacion de edificios
+    buildingPoints.on('click', function(e) 
+    {
+        if (e.layer != lastCircle) {
+            //console.log("distintos")
+            secondLastCircle = lastCircle;
+            lastCircle = e.layer;
+            var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
+            L.DomEvent.stopPropagation(e);
+        } else {
+            //console.log("Iguales")
+            L.DomEvent.stopPropagation(e);
+        }
+        
+    });
+
+    //Funcion click derecho de un punto de una estructura de edificacion que muestra las opciones que se pueden realizar
+    buildingPoints.on('contextmenu', function(e) 
+    {
+        BuildingPointsOptions(e,map);
+    });
+
+    //Funcion click derecho de edificacion creada que muestra las opciones que se pueden realizar
+    buildings.on('contextmenu', function(e) 
+    {
+        BuildingOptions(e,map);
+    });
+
+
+    //funcion que remueve punto de los caminos
+    function removeCircle()
+    {
+        let latlon = selectedCircle.getLatLng();
+        //console.log(a.getLatLng())
+        if (selectedCircle.options.feature === "newPoint")
+        {
+            routePoints.removeLayer(selectedCircle);
+        }
+        else
+        {
+            selectedCircle.options.feature = "delPoint";
+            routePoints.removeLayer(selectedCircle);
+            deletedLayers.addLayer(selectedCircle);
+        }
+        removePolylinesWithLatLng(latlon);
+    }
+
+    //Funcion auxiliar que guarda un punto en la variable
+    function addCircleToVariable(){
+        lastCircle = selectedCircle;
+        newRoute = false;
+        map.closePopup();
+    }
+
+    //funcion que remueve las lineas del mapa con la latlon del punto borrado
+    function removePolylinesWithLatLng(latLngRemover)
+    {
+        routesPolylines.eachLayer(function(layer)
+        {
+            var latlngs = layer.getLatLngs();
+            console.log('latLngRemover');
+            console.log(latLngRemover);
+            console.log('latlngs');
+            console.log(latlngs);
+            newRoute = true;
+            if(latlngs[0].lat == latLngRemover.lat && latlngs[0].lng == latLngRemover.lng || latlngs[latlngs.length-1].lat == latLngRemover.lat && latlngs[latlngs.length-1].lng == latLngRemover.lng)
+            {
+                routesPolylines.removeLayer(layer);
+                //layer.setStyle({opacity: 0})
+            }
+            map.closePopup();
+        });
+    }
+
+    //Funcion que quita las capas del mapa
+    function quitar(valor,objetos) {
+        console.log(valor);
+        objetos.forEach(element => {
+            if (valor) {
+                element.addTo(map);
+            } 
+            else {
+                element.removeFrom(map);
+            }
+        });
+    }
+    
+
+    /*
+    let initialTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png?noLabels', {maxZoom: 19,attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'});
+    initialTile.addTo(map);
+    var markers = L.featureGroup([
+    L.marker([-35.43485,-71.61764]),
+    L.marker([-35.43460,-71.61863])
+    ]).addTo(map);
+
+    var polylines = L.featureGroup([
+        L.polyline([[-35.43536,-71.62018], [-35.43521,-71.61822]]),
+        L.polyline([[-35.43526,-71.61863], [-35.43488,-71.61869]])
+        ]).addTo(map);
+    var CustomControl = L.Control.extend({
+    onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        container.innerHTML =   
+        '<div class="btn-group-vertical" role="group" aria-label="First group">'+
+            '<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#layersModal">'+
+                '<i class="bi bi-stack"></i>'+
+            '</button>'+
+            '<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#toolsModal">'+
+                '<i class="bi bi-tools"></i>'+
+            '</button>'+
+        '</div>'
+        ;
+        return container;
+    }});
+    new CustomControl({position: 'topright'}).addTo(map);
+    function quitar(valor,objeto) {
+        console.log(valor)
+        if (valor) {
+            objeto.addTo(map);
+        } 
+        else {
+            objeto.removeFrom(map);
+        }
+    }
+    
+    polylines.addLayer(L.polyline([[-35.43521,-71.61823], [-35.43561,-71.61696]]));
+    polylines.addTo(map);
+    */
+    /*
+    var CustomControl = L.Control.extend({
+    onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        container.innerHTML = '<div class="dropdown">'+
+                                '<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">'+
+                                '<i class="bi bi-stack" width="16" height="16"></i>'+
+                                '</button>'+
+                                '<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">'+
+                                '<li><a class="dropdown-item" href="#">Action</a></li>'+
+                                '<li><a class="dropdown-item" href="#">Another action</a></li>'+
+                                '<li><a class="dropdown-item" href="#">Something else here</a></li>'+
+                                '</ul>'+
+                            '</div>'
+        ;
+        return container;
+    }});
+    new CustomControl({position: 'topright'}).addTo(map);*/
+    /*
+    var CustomControl = L.Control.extend({
+    onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        container.innerHTML = '<div class="text-white btn btn-dark"><i class="bi bi-stack" width="16" height="16"></i></div>';
+        return container;
+    }});
+    new CustomControl({position: 'topright'}).addTo(map);
+    */
+    /*
+    var CustomControl = L.Control.extend({
+    onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        container.innerHTML = '<h1>Mi control personalizado</h1>';
+        return container;
+    }
+});
+    var markers = L.featureGroup([
+    L.marker([-35.43485,-71.61764]),
+    L.marker([-35.43460,-71.61863])
+    ]).addTo(map);
+
+    var polylines = L.featureGroup([
+        L.polyline([[-35.43536,-71.62018], [-35.43521,-71.61822]]),
+        L.polyline([[-35.43526,-71.61863], [-35.43488,-71.61869]])
+        ]).addTo(map);
+    new CustomControl({position: 'topright'}).addTo(map);
+
+    L.control.bootstrapCheckbox({
+        layer: markers,
+        title: 'Mostrar marcadores'
+    }).addTo(map);
+
+    L.control.bootstrapCheckbox({
+        layer: polylines,
+        title: 'Mostrar polylines'
+    }).addTo(map);
+
+*/
+    /*
+    var markers = L.featureGroup([
+    L.marker([-35.43485,-71.61764]),
+    L.marker([-35.43460,-71.61863])
+    ]).addTo(map);
+
+    var polylines = L.featureGroup([
+        L.polyline([[-35.43536,-71.62018], [-35.43521,-71.61822]]),
+        L.polyline([[-35.43526,-71.61863], [-35.43488,-71.61869]])
+        ]).addTo(map);
+
+    var capas = {
+        "Marcadores": markers,
+        "Polylines": polylines
+    };
+    
+    L.control.layers(capas, null, {collapsed:true}).addTo(map);
+    */
+    /*
+    var variable = "valor inicial";
+
+    var capa1 = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: 'OpenStreetMap'
+    });
+
+    var capa2 = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: 'OpenStreetMap'
+    });
+
+    var capas = {
+        "Capa 1": capa1,
+        "Capa 2": capa2
+    };
+
+    var controlCapas = L.control.layers(capas).addTo(map);
+
+    map.on('baselayerchange', function (e) {
+        if (e.name === "Capa 1") {
+            variable = "nuevo valor para Capa 1";
+            console.log(variable);
+        } else if (e.name === "Capa 2") {
+            variable = "nuevo valor para Capa 2";
+            console.log(variable);
+        }
+    });
+    */
+
+   /*
+   var labels = L.layerGroup().addTo(map);
+   var label = L.marker([-35.43489,-71.61755], {
+    icon: L.divIcon({
+        className: 'label',
+        html: 'Label text'
+    })
+}).addTo(labels);
+
+function showLabels() {
+    if (map.getZoom() > 20) {
+        labels.eachLayer(function(layer) {
+            if (typeof layer.setStyle === 'function') {
+                layer.setStyle({visibility: 'hidden'});
+            }
+        });
+    } else {
+        labels.eachLayer(function(layer) {
+            if (typeof layer.setStyle === 'function') {
+                layer.setStyle({visibility: 'visible'});
+            }
+        });
+    }
+}
+
+map.on('zoomend', showLabels);
+   */
+</script>
+    
+{% endblock %}
