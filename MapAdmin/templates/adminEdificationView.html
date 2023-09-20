@@ -34,6 +34,13 @@
                 </div>
             </div>
             <div class="row">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'createEdification'%}" class="btn btn-dark">
+                        <i class="bi bi-building-add"></i>Crear Edificacion
+                    </a>
+                </div>
+            </div>
+            <div class="row">
                 <div class="d-flex justify-content-center mt-3">
                     <div class="btn-group" id="paginator" role="group" aria-label="Basic example">
 
@@ -46,6 +53,7 @@
                     <thead>
                         <tr>
                             <th>Nombre</th>
+                            <th>N° Piso</th>
                             <th>Pertenece a</th>
                             <th colspan="1">Opciones</th>
                         </tr>

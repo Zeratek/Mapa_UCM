@@ -67,9 +67,11 @@ function fillTable(Data,IdTable) {
     {
         let fila = tbody.insertRow();
         let cellNombre = fila.insertCell();
+        let cellPiso = fila.insertCell();
         let cellPertenece = fila.insertCell();
         let cellOpciones = fila.insertCell();
         cellNombre.innerHTML = Data[i].nombre;
+        cellPiso.innerHTML = Data[i].piso;
         cellPertenece.innerHTML = Data[i].nombre_fk;
         let botonEstado = document.createElement('a');
         let id = Data[i].id;

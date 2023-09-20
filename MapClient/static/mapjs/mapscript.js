@@ -4,19 +4,56 @@ function createMap(center,zoom){
     initialTile.addTo(map);
     return map;
 };
-
 //Funcion que rellena el mapa con los datos de la BD
-function RellenarMapa() {
-    let puntosMapaIniciales = JSON.parse(document.getElementById('puntosMapa_json').textContent);
-    let lineasMapaIniciales = JSON.parse(document.getElementById('lineasMapa_json').textContent);
+function RellenarMapaIniciales() {
+    
     puntosMapaIniciales.forEach(element => {
-        var circle = L.circle([element.lat_float,element.lon_float], {radius: 2,feature: 'oldPoint',id_value:element.id}).addTo(routePoints);
+        var circle = L.circle([element.lat_float,element.lon_float], {radius: 2,fillColor:"blue",feature: 'oldPoint',id_value:element.id}).addTo(routePoints);
     });
     lineasMapaIniciales.forEach(element => {
         var polyline = L.polyline([[element.punto_inicio_lat_float,element.punto_inicio_lon_float], [element.punto_fin_lat_float,element.punto_fin_lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
     });
+    estructurasMapaIniciales.forEach(element => {
+        let lista = element.coords.map(function(coord) 
+        {
+            return [coord.latitud,coord.longitud]
+        });
+        //console.log(lista);
+        var polygon = L.polygon(lista,{color: 'grey',fillColor: 'grey',feature:'oldBuild',id_value:element.id,piso:element.piso,nombre_fk:element.nombre_fk}).addTo(allBuildings);
+        polygon.bindTooltip(element.nombre, {
+            permanent: false,
+            direction: "center",
+            opacity: 0.7
+        });
+        if (element.piso === 1) 
+        {
+            buildings.addLayer(polygon);
+        }
+    });
+    var modalDiv =  document.getElementById('layersModalBody'); 
+    listaPisos.forEach(element => {
+        
+        var div = document.createElement('div');
+        let chek = '';
+        div.className = 'form-check';
+        if (element === 1) {
+            chek = 'checked'
+        }
+        div.innerHTML = '<input class="form-check-input" onchange="quitar(this.checked,' + element + ')" type="checkbox" value="" id="flexCheckDefault' + element + '"'+chek+'><label class="form-check-label" for="flexCheckDefault' + element + '">Piso ' + element + '</label>';
+        modalDiv.appendChild(div);
+    });
+    
 };
 
+function rellenarLayerOpciones() 
+{
+    for (var piso in featureGroups) {
+        var div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = '<input class="form-check-input" onchange="quitar(this.checked,[' + featureGroups[piso] + '])" type="checkbox" value="" id="flexCheckDefault' + piso + '"><label class="form-check-label" for="flexCheckDefault' + piso + '">Piso ' + piso + '</label>';
+        document.body.appendChild(div);
+    }
+}
 //Control customizado para herramientas y capas
 
 function customCtrl(m) {
@@ -38,15 +75,32 @@ function customCtrl(m) {
     return control;
 };
 
+//Funcion que despliega popup con las opciones de las lineas de camino
+function RouteLinesOptions(e,map) {
+    selectedLayer = e.layer;
+        var popupContent = 
+            '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
+                '<button onclick="removeLine()" class="btn btn-secondary">'+
+                    'Eliminar Camino'+
+                '</button>'+
+            '</div>'
+        ;
+        L.popup()
+        .setLatLng(e.latlng)
+        .setContent(popupContent)
+        .openOn(map);
+        L.DomEvent.stopPropagation(e);
+};
+
 //Funcion que despliega popup con las opciones de los puntos de camino
 function RoutePointsOptions(e,map) {
-    selectedCircle = e.layer;
+    selectedLayer = e.layer;
         var popupContent = 
             '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
                 '<button onclick="removeCircle()" class="btn btn-secondary">'+
                     'Eliminar'+
                 '</button>'+
-                '<button onclick="addCircleToVariable(selectedCircle)" class="btn btn-secondary">'+
+                '<button onclick="addCircleToVariable()" class="btn btn-secondary">'+
                     'Escoger'+
                 '</button>'+
             '</div>'
@@ -63,8 +117,8 @@ function BuildingPointsOptions(e,map) {
     selectedCircle = e.layer;
     var popupContent = 
         '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-            '<button onclick="removeCircle()" class="btn btn-secondary">'+
-                'Eliminar'+
+            '<button onclick="removeCirclesBuilding()" class="btn btn-secondary">'+
+                'Eliminar Puntos'+
             '</button>'+
             '<button onclick="crearEdificio()" class="btn btn-secondary">'+
                 'Crear Estructura'+
@@ -78,6 +132,12 @@ function BuildingPointsOptions(e,map) {
     L.DomEvent.stopPropagation(e);
 };
 
+//funcion que remueve todos los circulos de estructura
+function removeCirclesBuilding() {
+    buildingPoints.clearLayers();
+    buildingPolylines.clearLayers();
+}
+
 //Funcion que crea la estructura con los puntos creados
 function crearEdificio() 
 {
@@ -90,7 +150,7 @@ function crearEdificio()
             return [latlng.lat,latlng.lng];
         });
         console.log(ListaPuntos);
-        var polygon = L.polygon(ListaPuntos,{color: 'grey',fillColor: 'grey'}).addTo(buildings);
+        var polygon = L.polygon(ListaPuntos,{color: 'grey',fillColor: 'grey'}).addTo(buildStructures);
         //map.fitBounds(polygon.getBounds());
         buildingPoints.clearLayers();
         buildingPolylines.clearLayers();
@@ -151,36 +211,31 @@ function ListaParaGuardar()
           feature: layer.options.feature
         };
     });
-    
-    var newBuildEstructure = buildings.getLayers().filter(function(layer) 
+    var newBuildEstructure = allBuildings.getLayers().filter(function(layer) 
     {
-        return layer.options.feature === 'newBuild';
+        return layer.options.feature === 'newBuild' || layer.options.feature === 'updBuild';
     }).map(function(layer){
         var latlngs = layer.getLatLngs();
         console.log(latlngs);
-        return {
-            coords:latlngs,
-            feature: layer.options.feature,
-            id: layer.options.id_value
-        };
+        if (!('new_id_value' in selectedLayer.options)) {
+            return {
+                coords:latlngs,
+                feature: layer.options.feature,
+                id: layer.options.id_value
+            };
+        } else {
+            return {
+                feature: layer.options.feature,
+                id: layer.options.id_value,
+                new_id: layer.options.new_id_value
+            };
+        }
     });
     console.log(newBuildEstructure);
-    /*
-    var newBuildEstructure = buildings.getLayers().filter(function(layer) 
-    {
-        return layer.options.feature === 'newBuild';
-    }).map(function(layer){
-        console.log(layer);
-        var latlng = layer.getLatLngs();
-        var coords = latlng.map(function(latlng) {
-            return {lat: latlng.lat, lng: latlng.lng};
-        });
-        return {coords: coords, feature: layer.options.feature};
+    //lista de nuevas entradas
+    var newEntrances = listaEntradas.filter(function(entry) {
+        return entry.feature === 'newEntry'||entry.feature === 'delEntry'
     });
-    console.log(newBuildEstructure);
-    */
-
-
     //Variable que devuelve los datos a eliminar
     var dLayers = deletedLayers.getLayers().map(function(layer) 
     {
@@ -190,9 +245,12 @@ function ListaParaGuardar()
           };
     });
 
+    
+    console.log(dLayers);
     //console.log(newPolylines);
-    //console.log(newCircles);
-    listaFinal = [newCircles,newPolylines,newBuildEstructure,dLayers]
+    //console.log(newCircles);}
+    listaFinal = [newCircles,newPolylines,newBuildEstructure,newEntrances,dLayers]
+    //listaFinal = [newCircles,newPolylines,newBuildEstructure,dLayers]
     return listaFinal;
 }
 
@@ -233,10 +291,10 @@ function estructuraEdificio()
 
 function BuildingOptions(e,map) 
 {
-    selectedBuild = e.layer;
+    selectedLayer = e.layer;
     var popupContent = 
         '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-            '<button onclick="removeCircle()" class="btn btn-secondary">'+
+            '<button onclick="removeBuild()" class="btn btn-secondary">'+
                 'Eliminar'+
             '</button>'+
             '<button onclick="cerrarPopup()" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buildingModal">'+
@@ -251,29 +309,190 @@ function BuildingOptions(e,map)
     L.DomEvent.stopPropagation(e);
 }
 
+function CreatedBuildingOptions(e,map) 
+{
+    selectedLayer = e.layer;
+    var popupContent = 
+        '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
+            '<button onclick="removeBuild()" class="btn btn-secondary">'+
+                'Eliminar'+
+            '</button>'+
+            '<button onclick="cerrarPopup()" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buildingModal">'+
+                'Añadir Estructura'+
+            '</button>'+
+            '<button onclick="BuildingEntrance()" class="btn btn-secondary">'+
+                'Añadir entradas'+
+            '</button>'+
+        '</div>'
+    ;
+    L.popup()
+    .setLatLng(e.latlng)
+    .setContent(popupContent)
+    .openOn(map);
+    L.DomEvent.stopPropagation(e);
+}
+//Funcion que añade o quita entradas a los edificios o salas
+function BuildingEntrance() 
+{
+    cerrarPopup()
+    selectedBuild = selectedLayer;
+    if (entrances) {
+        UnckeckEntrance();
+    }
+    let id_filtro = selectedBuild.options.id_value;
+    let listaFiltrada = listaEntradas.filter(function(elemento) 
+    {
+        return elemento.edificio__id === id_filtro;
+    });
+    listaFiltrada.forEach(element => {
+        let circuloFiltrado = null;
+        routePoints.getLayers().forEach(elem => {
+            if (elem.options.id_value === element.punto_camino__id) {
+                circuloFiltrado = elem;
+            }
+        });
+        if (circuloFiltrado) {
+            circuloFiltrado.setStyle({fillColor: 'red'});
+            auxiliarEntranceList.addLayer(circuloFiltrado);
+        }
+    });
+    entrances=true;
+}
+//Funcion que desmarca las entradas 
+function UnckeckEntrance() 
+{
+    auxiliarEntranceList.getLayers().forEach(element => {
+        element.setStyle({fillColor: 'blue'});
+        auxiliarEntranceList.removeLayer(element);
+    });
+    //auxiliarEntranceList.clearLayers();
+}
+//Funcion que decide si es nuevo o se esta actualizando un layer de structura de edificacion
+function asociarEstructura() 
+{
+    if (!('feature' in selectedLayer.options)) 
+    {
+        console.log('Nuevo')
+        asociarEdificacionAEstructura();
+    } else {
+        console.log('Antiguo')
+        EditarAsEdificacionAEstructura();
+    }
+}
+
 //Funcion que asocia la estructura creada con una edificacion(edificio,sala,oficina,etc)
 function asociarEdificacionAEstructura() 
 {
     let select = document.getElementById('selectorEdificacion');
     let opcionSeleccionada = select.options[select.selectedIndex].value;
-    if (!('id_value' in selectedBuild.options)) {
-        selectedBuild.options.feature = "newBuild";
-        selectedBuild.options.id_value = parseInt(opcionSeleccionada);
-        console.log(opcionSeleccionada); 
+    console.log(opcionSeleccionada);
+    if (opcionSeleccionada==="0") {
+        return;
     }
-    else
+    selectedLayer.options.feature = "newBuild";
+    selectedLayer.options.id_value = parseInt(opcionSeleccionada);
+    let selectedDict = buscar_diccionario_id(listaEdificacionesIniciales,parseInt(opcionSeleccionada))
+    selectedLayer.options.piso = selectedDict.piso;
+    selectedLayer.options.nombre_fk = selectedDict.nombre_fk;
+    selectedLayer.bindTooltip(selectedDict.nombre, {
+        permanent: false,
+        direction: "center",
+        opacity: 0.7
+    });
+    let layerName = 'flexCheckDefault'+selectedDict.piso;
+    if (document.getElementById(layerName).checked) 
     {
-        if (selectedBuild.options.feature === "newBuild") 
-        {
-            selectedBuild.options.id_value = parseInt(opcionSeleccionada);
-        } else 
-        {
-            selectedBuild.options.feature = "updBuild";
-            selectedBuild.options.id_value = parseInt(opcionSeleccionada);
-        }
+        console.log("añade al buildings");
+        buildStructures.removeLayer(selectedLayer);
+        allBuildings.addLayer(selectedLayer);
+        buildings.addLayer(selectedLayer);
+    } else 
+    {
+        console.log("no lo añade al buildings");
+        buildStructures.removeLayer(selectedLayer);
+        allBuildings.addLayer(selectedLayer);
+    }
+    //console.log(opcionSeleccionada); 
+}
+
+//funcion que actualiza la asociacion de estructura 
+function EditarAsEdificacionAEstructura() 
+{
+    let select = document.getElementById('selectorEdificacion');
+    let opcionSeleccionada = select.options[select.selectedIndex].value;
+    if (opcionSeleccionada==="0") {
+        return;
+    }
+    let selectedDict = buscar_diccionario_id(listaEdificacionesIniciales,parseInt(opcionSeleccionada))
+    if (selectedLayer.options.feature === "newBuild") 
+    {
+        selectedLayer.options.id_value = parseInt(opcionSeleccionada);
+        selectedLayer.options.piso = selectedDict.piso;
+        selectedLayer.options.nombre_fk = selectedDict.nombre_fk;
+        console.log('Entro a nuewBuild')
+        var tooltip = selectedLayer.getTooltip();
+        tooltip.setContent(selectedDict.nombre);
+    } else 
+    {
+        selectedLayer.options.feature = "updBuild";
+        selectedLayer.options.new_id_value = parseInt(opcionSeleccionada);
+        var tooltip = selectedLayer.getTooltip();
+        tooltip.setContent(selectedDict.nombre);
+    }
+    let layerName = 'flexCheckDefault'+selectedDict.piso;
+    if (document.getElementById(layerName).checked) 
+    {
+        console.log("añade al buildings");
+        buildings.addLayer(selectedLayer);
     }
 }
 
+function removeLine() 
+{
+    cerrarPopup();
+    if (selectedLayer.options.feature === "newPoly")
+    {
+        routesPolylines.removeLayer(selectedLayer);
+    }
+    else
+    {
+        selectedLayer.options.feature = "delPoly";
+        routesPolylines.removeLayer(selectedLayer);
+        deletedLayers.addLayer(selectedLayer);
+        //console.log(selectedLayer);
+        //console.log(deletedLayers.getLayers());
+    }
+}
+
+function removeBuild() 
+{
+    cerrarPopup();
+    if (selectedLayer.options.feature === "newBuild")
+    {
+        buildings.removeLayer(selectedLayer);
+    }
+    else
+    {
+        selectedLayer.options.feature = "delBuild";
+        buildings.removeLayer(selectedLayer);
+        deletedLayers.addLayer(selectedLayer);
+        //console.log(selectedLayer);
+        //console.log(deletedLayers.getLayers());
+    }
+}
+
+//funcion que encuentra el objeto de la lista
+function buscar_diccionario_id(lista, id) 
+{
+    for (let i = 0; i < lista.length; i++) 
+    {
+      if (lista[i].id === id) 
+      {
+        return lista[i];
+      }
+    }
+    return null;
+}
 //funcion que cierra el popup abierto por las opciones
 function cerrarPopup() 
 {

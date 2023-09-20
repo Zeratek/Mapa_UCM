@@ -6,19 +6,15 @@
 {% csrf_token %}
 <div class="col">
     <div class="row">
-        <div class="d-flex justify-content-center">
-            <div id="map" style="height: 600px; width: 600px;"></div>
+        <div class="d-flex justify-content-center mb-4">
+            <a class="btn btn-primary" onclick="saveData(link)" role="button">Guardar Cambios</a>
         </div>
     </div>
     <div class="row">
         <div class="d-flex justify-content-center">
-            <a class="btn btn-primary" onclick="saveData(link)" role="button">Guardar Cambios</a>
-        </div>
-        <div class="d-flex justify-content-center">
-            <a class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#buildingModal" role="button">prueba modal</a>
+            <div id="map" style="height: 600px; width: 600px;"></div>
         </div>
     </div>
-    
 </div>
 {% comment %}
     EL SIGUIENTE MODAL ES PARA LAS OPCIONES O CONTROL DE CAPAS, ESTE CONTIENE CKECKBOX QUE ACTIVAN O DESACTIVAN CAPAS
@@ -31,7 +27,7 @@
             <h1 class="modal-title fs-5" id="layersModalLabel">Modal title</h1>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" id="layersModalBody">
                 {% comment %}
                     BODY CON LAS OPCIONES
                 {% endcomment %}
@@ -48,9 +44,15 @@
                     </label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" onchange="quitar(this.checked,[buildingPoints,buildingPolylines])" type="checkbox" value="" id="flexCheckDefault" checked>
+                    <input class="form-check-input" onchange="quitar(this.checked,[buildingPoints,buildingPolylines,buildStructures])" type="checkbox" value="" id="flexCheckDefault" checked>
                     <label class="form-check-label" for="flexCheckDefault">
                         Edificios(Herramienta)
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" onchange="quitar(this.checked,[allBuildings])" type="checkbox" value="" id="flexCheckDefault">
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Edificios(Todos)
                     </label>
                 </div>
             </div>
@@ -105,14 +107,14 @@
                     BODY CON LAS OPCIONES PARA AÑADIR NOMBRE DE EDIFICIO O SALA A ESTRUCTURA 
                 {% endcomment %}
                 <select id="selectorEdificacion" class="form-select form-select-scrollable-menu" aria-label="Default select example">
-                    <option selected>Selecciona una edificacion</option>
+                    <option value="0" selected>Selecciona una edificacion</option>
                     {% for Edif in listaEdificaciones %}
                         <option value="{{Edif.id}}">{{Edif.nombre}}</option>
                     {% endfor %}
                     
                 </select>
                 <div class="d-flex justify-content-center mt-2">
-                    <button type="button" onclick="asociarEdificacionAEstructura()" class="btn btn-outline-dark" data-bs-dismiss="modal" aria-label="Close">Seleccionar</button>
+                    <button type="button" onclick="asociarEstructura()" class="btn btn-outline-dark" data-bs-dismiss="modal" aria-label="Close">Seleccionar</button>
                 </div>
             </div>
         </div>
@@ -120,13 +122,21 @@
 </div>
 {{ puntosMapa|json_script:"puntosMapa_json"}}
 {{ lineasMapa|json_script:"lineasMapa_json"}}
-
+{{ estructurasMapa|json_script:"estructurasMapa_json"}}
+{{ listaEdificaciones|json_script:"listaEdificaciones_json"}}
+{{ listaEntradas|json_script:"listaEntradas_json"}}
+{{ pisos|json_script:"pisos_json"}}
 {% endblock %}
 
 {% block scripts %}
 
 <script>
-    
+    var puntosMapaIniciales = JSON.parse(document.getElementById('puntosMapa_json').textContent);
+    var lineasMapaIniciales = JSON.parse(document.getElementById('lineasMapa_json').textContent);
+    var estructurasMapaIniciales = JSON.parse(document.getElementById('estructurasMapa_json').textContent);
+    var listaEdificacionesIniciales = JSON.parse(document.getElementById('listaEdificaciones_json').textContent);
+    var listaEntradas = JSON.parse(document.getElementById('listaEntradas_json').textContent);
+    var listaPisos = JSON.parse(document.getElementById('pisos_json').textContent);
     var link = "{% url 'saveData' %}"
     console.log(link);
     var map = createMap([-35.43559,-71.61971], 17);
@@ -137,14 +147,18 @@
     var routePoints = L.featureGroup().addTo(map);
 
     //Edificios
+    var allBuildings = L.featureGroup()
     var buildings = L.featureGroup().addTo(map);
+    //Variables para añadir entradas a edificios
+    var entrances = false;
+    var auxiliarEntranceList = L.featureGroup()
 
     //Variables de creacion edificios nuevos
     var buildingPolylines = L.featureGroup().addTo(map);
     var buildingPoints = L.featureGroup().addTo(map);
+    var buildStructures = L.featureGroup().addTo(map);
     var selectedBuild = null;
     //var buildingSelectedPoint = null;
-
     //Control customizado
     var CustomControl = customCtrl(map);
     new CustomControl({position: 'topright'}).addTo(map);
@@ -153,12 +167,13 @@
     var deletedLayers = L.featureGroup()
 
     //Se rellena el mapa
-    RellenarMapa()
+    RellenarMapaIniciales()
     //Auxiliares de Caminos y Edificios
     var newRoute = false;
-    var selectedCircle = null;
+    var selectedLayer = null;
     var lastCircle = null;
     var secondLastCircle = null;
+    
 
     //Herramientas al hacer click en el mapa
     map.on('click', function(e) 
@@ -169,7 +184,7 @@
             }
         if (opcionesTrabajo==="1")//Construccion de caminos 
         {
-            var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint'}).addTo(routePoints);
+            var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint',fillColor:"blue"}).addTo(routePoints);
             if (routePoints.getLayers().length > 1 && newRoute === false) {
                 if (lastCircle != null) {
                     secondLastCircle = lastCircle;
@@ -205,17 +220,64 @@
     //Al hacer click en un circulo de camino
     routePoints.on('click', function(e) 
     {
-        if (e.layer != lastCircle) {
-            console.log("distintos")
+        if (entrances === false) 
+        {
+            if (e.layer != lastCircle && lastCircle != null) 
+            {
+            //console.log("distintos")
             secondLastCircle = lastCircle;
             lastCircle = e.layer;
             var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
             L.DomEvent.stopPropagation(e);
-        } else {
-            console.log("Iguales")
+            } else 
+            {
+            //console.log("Iguales")
             L.DomEvent.stopPropagation(e);
+            }
+        } else {
+            if (!('id_value' in e.layer.options)) {
+                alert('El punto debe estar guardado con anterioridad')
+            } else {
+                let existe = null;
+                listaEntradas.forEach(element => {
+                    if (element.edificio__id === selectedBuild.options.id_value && element.punto_camino__id === e.layer.options.id_value) {
+                        existe = element;
+                    }
+                });
+                //console.log(existe);
+                if (existe === null) {
+                    let dict = {feature:'newEntry',edificio__id:selectedBuild.options.id_value,punto_camino__id:e.layer.options.id_value}
+                    e.layer.setStyle({fillColor: 'red'});
+                    listaEntradas.push(dict)
+                    auxiliarEntranceList.addLayer(e.layer);
+                    console.log(listaEntradas);
+                }
+                else{
+                    if (!('feature' in existe)) {
+                        existe["feature"] = "delEntry";
+                        console.log(listaEntradas);
+                        e.layer.setStyle({fillColor: 'blue'});
+                    } 
+                    else if (existe["feature"] === "newEntry") 
+                    {
+                        let indice = listaEntradas.indexOf(existe);
+                        if (indice !== -1) 
+                        {
+                            listaEntradas.splice(indice, 1);
+                        }
+                        console.log(listaEntradas);
+                        e.layer.setStyle({fillColor: 'blue'});
+                    }
+                    else{
+                        delete existe["feature"];
+                        e.layer.setStyle({fillColor: 'red'});
+                        console.log(listaEntradas);
+                    }
+                    
+                }
+            }
+            
         }
-        
     });
 
     //Funcion click derecho de puntos de camino que muestra las opciones que se pueden realizar
@@ -226,7 +288,20 @@
 
     map.on('contextmenu', function(e) 
     {
+        console.log(entrances);
         newRoute = true;
+        if (entrances === true) 
+        {
+            entrances = false;
+            selectedBuild = null;
+            UnckeckEntrance();
+        }
+    });
+
+    //Funcion click derecho de lineas de camino que muestra las opciones que se pueden realizar
+    routesPolylines.on('contextmenu', function(e) 
+    {
+        RouteLinesOptions(e,map);
     });
 
     //Funciones para creacion de edificios
@@ -250,35 +325,75 @@
     {
         BuildingPointsOptions(e,map);
     });
-
+    
     //Funcion click derecho de edificacion creada que muestra las opciones que se pueden realizar
     buildings.on('contextmenu', function(e) 
     {
+        CreatedBuildingOptions(e,map);
+    });
+    buildStructures.on('contextmenu', function(e) 
+    {
         BuildingOptions(e,map);
     });
-
+    buildings.on('click', function(e) 
+    {
+        if (opcionesTrabajo==="1") {
+            var circle = L.circle(e.latlng, {radius: 2,fillColor:"blue",feature: 'newPoint'}).addTo(routePoints);
+            if (routePoints.getLayers().length > 1 && newRoute === false) {
+                if (lastCircle != null) {
+                    secondLastCircle = lastCircle;
+                    lastCircle = routePoints.getLayers()[routePoints.getLayers().length - 1];
+                    var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
+                }
+                else
+                {
+                    lastCircle = routePoints.getLayers()[routePoints.getLayers().length - 1];
+                    newRoute = false;
+                }
+            }else{
+                lastCircle = routePoints.getLayers()[routePoints.getLayers().length - 1];
+                newRoute = false;
+            }
+        }
+        else if (opcionesTrabajo==="2")//Construccion de Edificios 
+        {
+            var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint',color:"green"}).addTo(buildingPoints);
+            console.log("hola");
+            if (lastCircle != null) {
+                secondLastCircle = lastCircle;
+                lastCircle = buildingPoints.getLayers()[buildingPoints.getLayers().length - 1];
+                estructuraEdificio();
+                //var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(buildingPolylines);
+            }
+            else
+            {
+                lastCircle = buildingPoints.getLayers()[buildingPoints.getLayers().length - 1];
+                newRoute = false;
+            }
+        }
+    });
 
     //funcion que remueve punto de los caminos
     function removeCircle()
     {
-        let latlon = selectedCircle.getLatLng();
+        let latlon = selectedLayer.getLatLng();
         //console.log(a.getLatLng())
-        if (selectedCircle.options.feature === "newPoint")
+        if (selectedLayer.options.feature === "newPoint")
         {
-            routePoints.removeLayer(selectedCircle);
+            routePoints.removeLayer(selectedLayer);
         }
         else
         {
-            selectedCircle.options.feature = "delPoint";
-            routePoints.removeLayer(selectedCircle);
-            deletedLayers.addLayer(selectedCircle);
+            selectedLayer.options.feature = "delPoint";
+            routePoints.removeLayer(selectedLayer);
+            deletedLayers.addLayer(selectedLayer);
         }
         removePolylinesWithLatLng(latlon);
     }
 
     //Funcion auxiliar que guarda un punto en la variable
     function addCircleToVariable(){
-        lastCircle = selectedCircle;
+        lastCircle = selectedLayer;
         newRoute = false;
         map.closePopup();
     }
@@ -305,8 +420,26 @@
 
     //Funcion que quita las capas del mapa
     function quitar(valor,objetos) {
-        console.log(valor);
-        objetos.forEach(element => {
+        //console.log(valor);
+        //console.log(typeof objetos);
+        if (typeof objetos === "number") {
+            filteredLayers = allBuildings.getLayers().filter(function(layer) 
+            {
+                return layer.options.piso === objetos && layer.options.nombre_fk !== "-";
+            });
+            console.log(filteredLayers);
+            if (valor) {
+                filteredLayers.forEach(element => {
+                    buildings.addLayer(element);
+                });
+            } 
+            else {
+                filteredLayers.forEach(element => {
+                    buildings.removeLayer(element);
+                });
+            }
+        } else {
+            objetos.forEach(element => {
             if (valor) {
                 element.addTo(map);
             } 
@@ -314,181 +447,8 @@
                 element.removeFrom(map);
             }
         });
-    }
-    
-
-    /*
-    let initialTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png?noLabels', {maxZoom: 19,attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'});
-    initialTile.addTo(map);
-    var markers = L.featureGroup([
-    L.marker([-35.43485,-71.61764]),
-    L.marker([-35.43460,-71.61863])
-    ]).addTo(map);
-
-    var polylines = L.featureGroup([
-        L.polyline([[-35.43536,-71.62018], [-35.43521,-71.61822]]),
-        L.polyline([[-35.43526,-71.61863], [-35.43488,-71.61869]])
-        ]).addTo(map);
-    var CustomControl = L.Control.extend({
-    onAdd: function(map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.innerHTML =   
-        '<div class="btn-group-vertical" role="group" aria-label="First group">'+
-            '<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#layersModal">'+
-                '<i class="bi bi-stack"></i>'+
-            '</button>'+
-            '<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#toolsModal">'+
-                '<i class="bi bi-tools"></i>'+
-            '</button>'+
-        '</div>'
-        ;
-        return container;
-    }});
-    new CustomControl({position: 'topright'}).addTo(map);
-    function quitar(valor,objeto) {
-        console.log(valor)
-        if (valor) {
-            objeto.addTo(map);
-        } 
-        else {
-            objeto.removeFrom(map);
         }
     }
-    
-    polylines.addLayer(L.polyline([[-35.43521,-71.61823], [-35.43561,-71.61696]]));
-    polylines.addTo(map);
-    */
-    /*
-    var CustomControl = L.Control.extend({
-    onAdd: function(map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.innerHTML = '<div class="dropdown">'+
-                                '<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">'+
-                                '<i class="bi bi-stack" width="16" height="16"></i>'+
-                                '</button>'+
-                                '<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">'+
-                                '<li><a class="dropdown-item" href="#">Action</a></li>'+
-                                '<li><a class="dropdown-item" href="#">Another action</a></li>'+
-                                '<li><a class="dropdown-item" href="#">Something else here</a></li>'+
-                                '</ul>'+
-                            '</div>'
-        ;
-        return container;
-    }});
-    new CustomControl({position: 'topright'}).addTo(map);*/
-    /*
-    var CustomControl = L.Control.extend({
-    onAdd: function(map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.innerHTML = '<div class="text-white btn btn-dark"><i class="bi bi-stack" width="16" height="16"></i></div>';
-        return container;
-    }});
-    new CustomControl({position: 'topright'}).addTo(map);
-    */
-    /*
-    var CustomControl = L.Control.extend({
-    onAdd: function(map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        container.innerHTML = '<h1>Mi control personalizado</h1>';
-        return container;
-    }
-});
-    var markers = L.featureGroup([
-    L.marker([-35.43485,-71.61764]),
-    L.marker([-35.43460,-71.61863])
-    ]).addTo(map);
-
-    var polylines = L.featureGroup([
-        L.polyline([[-35.43536,-71.62018], [-35.43521,-71.61822]]),
-        L.polyline([[-35.43526,-71.61863], [-35.43488,-71.61869]])
-        ]).addTo(map);
-    new CustomControl({position: 'topright'}).addTo(map);
-
-    L.control.bootstrapCheckbox({
-        layer: markers,
-        title: 'Mostrar marcadores'
-    }).addTo(map);
-
-    L.control.bootstrapCheckbox({
-        layer: polylines,
-        title: 'Mostrar polylines'
-    }).addTo(map);
-
-*/
-    /*
-    var markers = L.featureGroup([
-    L.marker([-35.43485,-71.61764]),
-    L.marker([-35.43460,-71.61863])
-    ]).addTo(map);
-
-    var polylines = L.featureGroup([
-        L.polyline([[-35.43536,-71.62018], [-35.43521,-71.61822]]),
-        L.polyline([[-35.43526,-71.61863], [-35.43488,-71.61869]])
-        ]).addTo(map);
-
-    var capas = {
-        "Marcadores": markers,
-        "Polylines": polylines
-    };
-    
-    L.control.layers(capas, null, {collapsed:true}).addTo(map);
-    */
-    /*
-    var variable = "valor inicial";
-
-    var capa1 = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        attribution: 'OpenStreetMap'
-    });
-
-    var capa2 = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-        attribution: 'OpenStreetMap'
-    });
-
-    var capas = {
-        "Capa 1": capa1,
-        "Capa 2": capa2
-    };
-
-    var controlCapas = L.control.layers(capas).addTo(map);
-
-    map.on('baselayerchange', function (e) {
-        if (e.name === "Capa 1") {
-            variable = "nuevo valor para Capa 1";
-            console.log(variable);
-        } else if (e.name === "Capa 2") {
-            variable = "nuevo valor para Capa 2";
-            console.log(variable);
-        }
-    });
-    */
-
-   /*
-   var labels = L.layerGroup().addTo(map);
-   var label = L.marker([-35.43489,-71.61755], {
-    icon: L.divIcon({
-        className: 'label',
-        html: 'Label text'
-    })
-}).addTo(labels);
-
-function showLabels() {
-    if (map.getZoom() > 20) {
-        labels.eachLayer(function(layer) {
-            if (typeof layer.setStyle === 'function') {
-                layer.setStyle({visibility: 'hidden'});
-            }
-        });
-    } else {
-        labels.eachLayer(function(layer) {
-            if (typeof layer.setStyle === 'function') {
-                layer.setStyle({visibility: 'visible'});
-            }
-        });
-    }
-}
-
-map.on('zoomend', showLabels);
-   */
 </script>
     
 {% endblock %}

@@ -6,8 +6,8 @@ from .models import Edificacion
 class createEdificationForm(ModelForm):
     class Meta:
         model = Edificacion
-        fields = ['nombre','pertenece']
-        labels = {'nombre':'Nombre Edificacion','pertenece':'Pertenece a'}
+        fields = ['nombre','piso','pertenece']
+        labels = {'nombre':'Nombre Edificacion','piso':'Numero de piso','pertenece':'Pertenece a'}
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # asi vuelves tus campos no requeridos
