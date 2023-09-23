@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="{% static 'leaflet/leaflet.css' %}" />
     <script src="{% static 'leaflet/leaflet.js' %}"></script>
     
-    
 	
 	<link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
 	<script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
@@ -35,21 +34,21 @@
     </nav>
     <div class="offcanvas offcanvas-start bg-dark text-white" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="SideBar">
         <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="SideBarTitle">Offcanvas</h5>
+          <h5 class="offcanvas-title" id="SideBarTitle">Titulo</h5>
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body" id="A">
           <div>
-            Some text as placeholder. In real life you can have the elements you have chosen. Like, text, images, lists, etc.
+                Aqui iria informacion de los edificios, salas, carreras
           </div>
         </div>
     </div>
-    <div class="container-fluid mt-4">
-        <div class="d-flex justify-content-center">
+    <div class="container mt-4">
+        
         {% block MapaUCM %}
 
         {% endblock %}
-        </div>
+       
     </div>
     {% block scripts %}
             

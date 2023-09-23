@@ -3,26 +3,133 @@
 {% block title%}MapaUCM{%endblock%}
 
 {% block MapaUCM %}
-<div id="map" style="height: 600px; width: 600px;"></div>
-{{ Buildings|json_script:"buildings_json"}}
 
+
+<div class="col" >
+    <div class="row m-0" >
+        <div class="justify-content-center">
+            <div class="input-group mb-2">
+                <input class="form-control" list="datalistOptions" id="inputListaEdificios" placeholder="Nombre Sala o Edificio">
+                <datalist id="datalistOptions">
+                    {% for edificio in listaEdificaciones %}
+                    <option value="{{edificio.nombre}}">
+                    {% endfor %}
+                </datalist>
+                <a onclick="buscarInformacionEficio()" class="btn btn-outline-dark" ><i class="bi bi-search"></i></a>
+            </div>
+        </div>
+        <div class="justify-content-center">
+            <div id="map" style="min-height: 85vh;"></div>
+        </div>
+    </div>
+</div>
+
+
+
+{% comment %}
+    EL SIGUIENTE MODAL ES PARA LAS OPCIONES O CONTROL DE CAPAS, ESTE CONTIENE CKECKBOX QUE ACTIVAN O DESACTIVAN CAPAS
+{% endcomment %}
+<div class="modal fade" id="layersModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="layersModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h1 class="modal-title fs-5" id="layersModalLabel">Modal title</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="layersModalBody">
+                {% comment %}
+                    BODY CON LAS OPCIONES
+                {% endcomment %}
+                
+            </div>
+        </div>
+    </div>
+</div>
+{{ estructurasMapa|json_script:"estructurasMapa_json"}}
+{{ pisos|json_script:"pisos_json"}}
+{{ listaEdificaciones|json_script:"listaEdificaciones_json"}}
 {% endblock %}
 
 {% block scripts %}
 
 <script>
-    document.addEventListener('DOMContentLoaded',() => 
+    
+    //mapa
+    var map = createMap([-35.43559,-71.61971], 17);
+    //Control de mapa
+    var CustomControl = customCtrl(map);
+    new CustomControl({position: 'topright'}).addTo(map);
+    //lista de las estructuras de edificaciones
+    var estructurasMapaIniciales = JSON.parse(document.getElementById('estructurasMapa_json').textContent);
+    //lista edificaciones
+    var listaEdificacionesIniciales = JSON.parse(document.getElementById('listaEdificaciones_json').textContent);
+    //lista con el numero de pisos existente
+    var listaPisos = JSON.parse(document.getElementById('pisos_json').textContent);
+    //grupo que guarda poligonos con la forma de edificios
+    var buildings = L.featureGroup().addTo(map);
+    var allBuildings = L.featureGroup()
+    //rellena el mapa con estructuras y layers de pisos en el modal
+    RellenarMapaIniciales()
+    var link_ruta = "{% url 'rutaCorta' 'p_lat' 'p_lon' %}"
+    var userPositionMarker = null;
+    var contextmenuPosition = null;
+    var idEjecute;
+    var ejecuteLocation = false;
+    console.log(link_ruta);
+    buildings.on('click', function(e) 
     {
-        
-        let map = createMap([-35.43559,-71.61971], 17);
-        let buildings = JSON.parse(document.getElementById('buildings_json').textContent);
-        let markersGroup = L.featureGroup().addTo(map);
-        markersGroup.clearLayers();
-        for (let building of buildings){
-            L.marker([building.point__lat,building.point__lon]).addTo(markersGroup).bindPopup('<i>'+building.name+'</i><br><a   onclick="HicieronClick3('+building.id+')" >informacion</a>')
-        };
-        
+        BuildingOptions(e,map);
     });
+    
+    map.on('locationfound', onLocationFound);
+    map.on('locationerror', onLocationError);
+    map.on('click', function(e) 
+    {
+        MapOptions(e,map);
+    });
+    map.on('contextmenu', function(e) 
+    {
+        MapOptions(e,map);
+    });
+    /*
+    if (navigator.geolocation) {
+        alert('Es compatible');
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+    } else {
+    alert('La geolocalización no es compatible en este navegador.');
+    }
+
+    function successCallback(position) {
+    // El usuario ha permitido el acceso a la ubicación
+    var latitude = position.coords.latitude;
+    var longitude = position.coords.longitude;
+    alert('Ubicación:', latitude, longitude);
+    }
+
+    function errorCallback(error) {
+    // El usuario ha denegado el acceso a la ubicación o ha ocurrido un error
+    alert('Error:', error.message);
+    }
+    map.locate({ setView: true, enableHighAccuracy: true });
+    */
+    if ("geolocation" in navigator) {
+  navigator.geolocation.getCurrentPosition(
+    function (position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      userPositionMarker = L.circle([latitude,longitude],{radius:1}).addTo(map).bindPopup("Estás aquí");
+      map.setView(userPositionMarker.getLatLng(), 13);
+      //map.setView([latitude,longitude], 10);
+      //alert("Latitud: " + latitude + "\nLongitud: " + longitude);
+    },
+    function (error) {
+      alert("Error al obtener la ubicación: " + error.message);
+    }
+    );
+    } else {
+    alert("La geolocalización no es compatible con este navegador.");
+    }
+
 </script>
     
 {% endblock %}
