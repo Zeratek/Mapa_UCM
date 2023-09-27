@@ -1,0 +1,19 @@
+{% extends 'clientBase.html' %}
+
+{% block title%}MapaUCM{%endblock%}
+
+{% block MapaUCM %}
+<div id="map" style="min-height: 85vh;"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var map = L.map('map').fitWorld();
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+    }).addTo(map);
+</script>
+{% endblock %}
