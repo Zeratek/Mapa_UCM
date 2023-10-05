@@ -3,8 +3,6 @@
 {% block title%}MapaUCM{%endblock%}
 
 {% block MapaUCM %}
-
-
 <div class="col" >
     <div class="row m-0" >
         <div class="justify-content-center">
@@ -18,6 +16,7 @@
                 <a onclick="buscarInformacionEficio()" class="btn btn-outline-dark" ><i class="bi bi-search"></i></a>
             </div>
         </div>
+        
         <div class="justify-content-center">
             <div id="map" style="min-height: 85vh;"></div>
         </div>
@@ -48,12 +47,15 @@
 {{ estructurasMapa|json_script:"estructurasMapa_json"}}
 {{ pisos|json_script:"pisos_json"}}
 {{ listaEdificaciones|json_script:"listaEdificaciones_json"}}
+{{ puntosMapa|json_script:"puntosMapa_json"}}
+{{ lineasMapa|json_script:"lineasMapa_json"}}
 {% endblock %}
 
 {% block scripts %}
 
 <script>
-    
+    var puntosMapaIniciales = JSON.parse(document.getElementById('puntosMapa_json').textContent);
+    var lineasMapaIniciales = JSON.parse(document.getElementById('lineasMapa_json').textContent);
     //mapa
     var map = createMap([-35.43559,-71.61971], 17);
     //Control de mapa
@@ -67,15 +69,19 @@
     var listaPisos = JSON.parse(document.getElementById('pisos_json').textContent);
     //grupo que guarda poligonos con la forma de edificios
     var buildings = L.featureGroup().addTo(map);
-    var allBuildings = L.featureGroup()
+    var allBuildings = L.featureGroup();
+    //Caminos
+    var routesPolylines = L.featureGroup().addTo(map);
+    var routePoints = L.featureGroup().addTo(map);
     //rellena el mapa con estructuras y layers de pisos en el modal
     RellenarMapaIniciales()
-    var link_ruta = "{% url 'rutaCorta' 'p_lat' 'p_lon' %}"
+    var selectedLayer;
+    var link_ruta = "{% url 'rutaCorta' 'p_lat' 'p_lon' 'e_id' %}"
     var userPositionMarker = null;
     var contextmenuPosition = null;
     var idEjecute;
     var ejecuteLocation = false;
-    console.log(link_ruta);
+    //console.log(link_ruta);
     buildings.on('click', function(e) 
     {
         BuildingOptions(e,map);
@@ -112,8 +118,9 @@
     }
     map.locate({ setView: true, enableHighAccuracy: true });
     */
+   /*
     if ("geolocation" in navigator) {
-  navigator.geolocation.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
     function (position) {
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
@@ -128,7 +135,7 @@
     );
     } else {
     alert("La geolocalización no es compatible con este navegador.");
-    }
+    }*/
 
 </script>
     

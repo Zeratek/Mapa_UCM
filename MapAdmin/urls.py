@@ -2,6 +2,8 @@ from django.urls import path,include
 from . import views
 urlpatterns = [
     path('adminmap/', views.index, name = 'adminIndex'),
+    path('adminmap/login', views.login_page, name = 'adminLogin'),
+    path('adminmap/logout', views.logout_page, name = 'adminLogout'),
     path('adminmap/save_datas', views.saveData, name = 'saveData'),
     path('adminmap/view_edification', views.viewEdificationPage, name = 'viewEdification'),
     path('adminmap/view_edification/<name>/<option>', views.viewEdificationPageList, name = 'listEdification'),

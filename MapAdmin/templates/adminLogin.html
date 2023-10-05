@@ -1,0 +1,21 @@
+{% extends 'adminBase.html'%}
+{% block title%}Ver Edificaciones{%endblock%}
+{% block contenedorPrincipal %}
+<div class="d-flex justify-content-center mt-4 mb-4">
+    <div class="card border-dark" style="min-width: 150px;">
+        <div class="card-header text-center">
+            <h3>Iniciar sesion</h1>
+        </div>
+        <div class="card-body p-2 m-2">
+            {% load crispy_forms_tags %}
+            <form method ="post">
+                {% csrf_token %}
+                {{form | crispy}}
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn btn-outline-dark text-center">enviar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

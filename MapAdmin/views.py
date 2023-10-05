@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect, HttpResponse,get_object_or_404
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth import logout, login, authenticate, get_user_model
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotAllowed
 from django.http import JsonResponse
 from .models import Punto,Linea,Edificacion,EstructuraEdificacion,EntradasEdificacion
@@ -8,11 +10,29 @@ from django.db.models.functions import Cast,Coalesce
 from django.core.paginator import Paginator
 from django.db import models
 import json
-from .forms import createEdificationForm
+from .forms import createEdificationForm,loginForm
 import math
 import heapq
 
+def login_page(request):
+    if request.method == 'GET':
+        return render(request, 'adminLogin.html', {'form': loginForm})
+    else:
+        user = authenticate(request, username = request.POST['username'],password=request.POST['password'])
+        if user is None:
+            #messages.error(request, 'El RUT o la contraseña es incorrecta')
+            return render(request, 'adminLogin.html', {'form': loginForm})
+        else:
+            #messages.success(request, 'Sesion Iniciada' )
+            login(request,user)
+            return redirect('adminIndex')
+
+def logout_page(request):
+    logout(request)
+    return redirect('adminLogin')
+
 # Create your views here.
+@login_required(login_url="adminLogin")
 def index(request):
     puntosMapa = list(Punto.objects.annotate(lat_float=Cast('lat', FloatField())).annotate(lon_float=Cast('lon', FloatField())).values('id', 'lat_float', 'lon_float'))
     lineasMapa = list(Linea.objects.annotate(punto_inicio_lat_float=Cast('punto_inicio__lat', FloatField())).annotate(punto_inicio_lon_float=Cast('punto_inicio__lon', FloatField())).annotate(punto_fin_lat_float=Cast('punto_fin__lat', FloatField())).annotate(punto_fin_lon_float=Cast('punto_fin__lon', FloatField())).values('id', 'punto_inicio_lat_float', 'punto_inicio_lon_float', 'punto_fin_lat_float', 'punto_fin_lon_float'))
@@ -40,6 +60,7 @@ def pruebaDJ():
     print(f"Distancia más corta: {shortest_distance}")
     print(f"Camino más corto: {shortest_path}")
 
+@login_required(login_url="adminLogin")
 def saveData(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -103,6 +124,7 @@ def saveData(request):
                         print('No se encontro ningun objeto')
     return JsonResponse([],safe=False)
 
+@login_required(login_url="adminLogin")
 @require_http_methods(["GET", "POST"])
 def createEdificationPage(request):
     if request.method == 'GET':
@@ -115,7 +137,8 @@ def createEdificationPage(request):
             return redirect('viewEdification')
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
-    
+
+@login_required(login_url="adminLogin")
 @require_http_methods(["GET", "POST"])
 def updateEdificationPage(request,e_id):
     objeto = get_object_or_404(Edificacion,id = e_id)
@@ -130,10 +153,12 @@ def updateEdificationPage(request,e_id):
             return redirect('viewEdification')
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
-    
+
+@login_required(login_url="adminLogin")
 def viewEdificationPage(request):
     return render(request, 'adminEdificationView.html')
 
+@login_required(login_url="adminLogin")
 def viewEdificationPageList(request,name,option):
     query = Q()
     #print(type(option))

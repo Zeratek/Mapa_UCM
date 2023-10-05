@@ -91,6 +91,11 @@ function buscarInformacionEficio()
     let obj = document.getElementById("inputListaEdificios");
     let valor = obj.value;
     let existe = null;
+    console.log("entro");
+    if (selectedLayer) {
+        selectedLayer.setStyle({fillColor: 'grey'});
+        console.log("entro");
+    }
     listaEdificacionesIniciales.forEach(edificacion => {
         if (edificacion.nombre === valor) {
             existe=edificacion.id;
@@ -114,6 +119,7 @@ function buscarInformacionEficio()
             estructura.setStyle({fillColor: 'red'});
             //map.setView(estructura.getBounds().getCenter());
             map.fitBounds(estructura.getBounds());
+            selectedLayer = estructura;
         } else {
             alert('no se encontro la estructura');
         }
@@ -192,6 +198,7 @@ function UpdateUserPosition()
 
 function UpdatePosition(position) {
     let coords = [position.coords.latitude, position.coords.longitude];
+    let fetchLink;
     if (userPositionMarker) {
         userPositionMarker.setLatLng(coords);
         map.setView(userPositionMarker.getLatLng(), 13);
@@ -199,6 +206,29 @@ function UpdatePosition(position) {
         userPositionMarker = L.circle(coords,{radius:1}).addTo(map).bindPopup("Estás aquí");
         map.setView(userPositionMarker.getLatLng(), 13);
     }
+    fetchLink = link_ruta.replace("p_lat", coords[0]);
+    fetchLink = fetchLink.replace("p_lon", coords[1]);
+    fetchLink = fetchLink.replace("e_id", selectedLayer.options.id_value);
+    fetch(fetchLink)
+        .then(response => response.json())
+        .then(data =>{
+            puntosRuta = data[0];
+            caminoRuta = data[1];
+            if (routePoints.getLayers().length != 0 && routesPolylines.getLayers().length != 0) {
+                routePoints.clearLayers();
+                routesPolylines.clearLayers();
+            }
+            puntosRuta.forEach(element => {
+                var circle = L.circle([element.lat_float,element.lon_float], {radius: 2,fillColor:"blue",feature: 'oldPoint',id_value:element.id}).addTo(routePoints);
+            });
+            let element = caminoRuta[0];
+            console.log(element)
+            var polyline = L.polyline([coords, [element.punto_fin_lat_float,element.punto_fin_lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
+            
+            caminoRuta.forEach(element => {
+                var polyline = L.polyline([[element.punto_inicio_lat_float,element.punto_inicio_lon_float], [element.punto_fin_lat_float,element.punto_fin_lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
+            });
+        });
 }
 
 function handleError(error) {
@@ -212,8 +242,8 @@ function UserPosConf(gps_info)
         //map.locate({ setView: true, enableHighAccuracy: true });
         
         if (ejecuteLocation === false) {
-            console.log("a");
             ejecuteLocation=true;
+            //console.log("entro")
             //idEjecute = setInterval(UpdateUserPosition, 4000);
             idEjecute = navigator.geolocation.watchPosition(UpdatePosition, handleError);
             console.log(idEjecute);
