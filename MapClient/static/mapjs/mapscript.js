@@ -133,7 +133,7 @@ function BuildingOptions(e,map)
     selectedLayer = e.layer;
     var popupContent = 
         '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-            '<button onclick="UserPosConf(true)" class="btn btn-secondary">'+
+            '<button onclick="UserPosConf(true);cerrarPopup();" class="btn btn-secondary">'+
                 'Como llegar'+
             '</button>'+
         '</div>'
@@ -238,7 +238,7 @@ function handleError(error) {
 function UserPosConf(gps_info) 
 {
     if (gps_info) {
-        console.log('Actualizanco latlon usuario');
+        //console.log('Actualizanco latlon usuario');
         //map.locate({ setView: true, enableHighAccuracy: true });
         
         if (ejecuteLocation === false) {
@@ -262,6 +262,7 @@ function stopLocate()
 {
     //clearInterval(idEjecute);
     navigator.geolocation.clearWatch(idEjecute);
+    ejecuteLocation = false;
 }
 function cerrarPopup() 
 {
