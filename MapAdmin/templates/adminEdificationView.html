@@ -71,6 +71,7 @@
     Edifications = JSON.parse(document.getElementById('edificaciones_json').textContent);
     var flink = "{% url 'listEdification' 'name' 'option' %}";
     var LinkString = "{% url 'updateEdification' 'id' %}";
+    var DeleteLink = "{% url 'deleteEdification' 'id' %}";
     show_list_table('#EdificationTable tbody',['nombreInput','opcionInput']);
     //show_list_table(Edifications,'#EdificationTable tbody','','linkString/id','assignmentLinkString/id');
 </script>

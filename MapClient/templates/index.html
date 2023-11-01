@@ -87,8 +87,6 @@
         BuildingOptions(e,map);
     });
     
-    map.on('locationfound', onLocationFound);
-    map.on('locationerror', onLocationError);
     map.on('click', function(e) 
     {
         MapOptions(e,map);
@@ -97,45 +95,7 @@
     {
         MapOptions(e,map);
     });
-    /*
-    if (navigator.geolocation) {
-        alert('Es compatible');
-    navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
-    } else {
-    alert('La geolocalización no es compatible en este navegador.');
-    }
-
-    function successCallback(position) {
-    // El usuario ha permitido el acceso a la ubicación
-    var latitude = position.coords.latitude;
-    var longitude = position.coords.longitude;
-    alert('Ubicación:', latitude, longitude);
-    }
-
-    function errorCallback(error) {
-    // El usuario ha denegado el acceso a la ubicación o ha ocurrido un error
-    alert('Error:', error.message);
-    }
-    map.locate({ setView: true, enableHighAccuracy: true });
-    */
-   /*
-    if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(
-    function (position) {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      userPositionMarker = L.circle([latitude,longitude],{radius:1}).addTo(map).bindPopup("Estás aquí");
-      map.setView(userPositionMarker.getLatLng(), 13);
-      //map.setView([latitude,longitude], 10);
-      //alert("Latitud: " + latitude + "\nLongitud: " + longitude);
-    },
-    function (error) {
-      alert("Error al obtener la ubicación: " + error.message);
-    }
-    );
-    } else {
-    alert("La geolocalización no es compatible con este navegador.");
-    }*/
+    
 
 </script>
     

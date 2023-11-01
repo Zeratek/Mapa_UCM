@@ -44,25 +44,22 @@ function updatePagination(totalPages, currentPage) {
         pagination.appendChild(a);
     }
 }
+
 function get_data_page_store_log_list(linkU,pageNum) 
 {
     let newLink = linkU+'?page='+pageNum;
-    //console.log(newLink);
-    //console.log(pageNum);
     fetch(newLink)
         .then(response => response.json())
         .then(data =>{
-            //console.log(data);
             fillTable(data.data,'#EdificationTable tbody')
         });
     updatePagination(globalTotalPages,parseInt(pageNum));
 }
 function fillTable(Data,IdTable) {
-    //console.log(Data);
+
     let tbody = document.querySelector(IdTable);
     let listLength = Data.length;
     tbody.innerHTML = "";
-    //let dictLenght = Object.keys(Data[0]).length;
     for (let i = 0; i < listLength; i++)
     {
         let fila = tbody.insertRow();
@@ -74,14 +71,19 @@ function fillTable(Data,IdTable) {
         cellPiso.innerHTML = Data[i].piso;
         cellPertenece.innerHTML = Data[i].nombre_fk;
         let botonEstado = document.createElement('a');
+        let botonDelete = document.createElement('a');
         let id = Data[i].id;
         id = id.toString();
         botonEstado.href = LinkString.replace("id", id);
         botonEstado.classList.add('btn','btn-danger');
         botonEstado.textContent = 'Editar';
+        botonDelete.href = DeleteLink.replace("id", id);
+        botonDelete.classList.add('btn','btn-danger');
+        botonDelete.textContent = 'Borrar';
         let div = document.createElement('div');
         div.classList.add('d-grid','gap-2');
         div.appendChild(botonEstado);
+        div.appendChild(botonDelete);
         cellOpciones.appendChild(div);
     }
 }

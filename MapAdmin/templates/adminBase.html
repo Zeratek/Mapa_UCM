@@ -23,8 +23,12 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid " style="text-align: center">
             <div class="col">
+                {% if user.is_authenticated %}
                 <button class="navbar-toggler d-block" type="button" data-bs-toggle="offcanvas" href="#SideBar" role="button" aria-expanded="false" aria-controls="SideBar"><span class="navbar-toggler-icon"></span>
                 </button>
+                {% else %}
+                    
+                {% endif %}
             </div>
             <div class="col">
                 <a class="navbar-brand">
@@ -34,6 +38,7 @@
             <div class="col"></div>
         </div>
     </nav>
+    {% if user.is_authenticated %}
     <div class="offcanvas offcanvas-start bg-dark text-white" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="SideBar">
         <div class="offcanvas-header">
           <h5 class="offcanvas-title" id="SideBarTitle"><a class=" text-white text-lg text-decoration-none" style="font-size: 40px;">Menu</a></h5>
@@ -51,9 +56,17 @@
                         <i class="fs-4 bi-building"></i>Administrar Edificaciones
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{% url 'adminLogout'%}" class="nav-link align-middle px-0">
+                        <i class="fs-4 bi-box-arrow-left"></i>Cerrar Sesion
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
+    {% else %}
+    {% endif %}
+    
     <div class="container-fluid mt-4">
         <div class="d-flex justify-content-center">
         {% block contenedorPrincipal %}

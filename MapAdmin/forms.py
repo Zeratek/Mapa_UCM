@@ -7,8 +7,8 @@ from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
 class createEdificationForm(ModelForm):
     class Meta:
         model = Edificacion
-        fields = ['nombre','piso','pertenece']
-        labels = {'nombre':'Nombre Edificacion','piso':'Numero de piso','pertenece':'Pertenece a'}
+        fields = ['nombre','piso','pertenece','informacion']
+        labels = {'nombre':'Nombre Edificacion','piso':'Numero de piso','pertenece':'Pertenece a','informacion':'Informacion Edificacion'}
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # asi vuelves tus campos no requeridos
@@ -22,5 +22,5 @@ class loginForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.fields['username'].label = 'RUT'
+        self.fields['username'].label = 'Nombre de usuario'
         self.fields['password'].label = 'Contraseña'

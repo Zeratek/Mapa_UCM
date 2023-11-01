@@ -1,11 +1,11 @@
 {% extends 'adminBase.html'%}
-{% block title%}Crear Edificacion{%endblock%}
+{% block title%}{{titulo_form}}{%endblock%}
 {% block contenedorPrincipal %}
 {% load crispy_forms_tags %}
 <div class="d-flex justify-content-center mt-2 mb-4">
     <div class="card border-dark" style="min-width: 150px;">
         <div class="card-header text-center">
-            <h3>Crear Eficacion</h1>
+            <h3>{{titulo_form}}</h1>
         </div>
         <div class="card-body p-2 m-2">
             <form method ="post">

@@ -9,4 +9,5 @@ urlpatterns = [
     path('adminmap/view_edification/<name>/<option>', views.viewEdificationPageList, name = 'listEdification'),
     path('adminmap/create_edification', views.createEdificationPage, name = 'createEdification'),
     path('adminmap/update_edification/<e_id>', views.updateEdificationPage, name = 'updateEdification'),
+    path('adminmap/delete_edification/<e_id>', views.deleteEdificationPage, name = 'deleteEdification'),
 ]

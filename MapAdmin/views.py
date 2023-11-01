@@ -20,10 +20,8 @@ def login_page(request):
     else:
         user = authenticate(request, username = request.POST['username'],password=request.POST['password'])
         if user is None:
-            #messages.error(request, 'El RUT o la contraseña es incorrecta')
             return render(request, 'adminLogin.html', {'form': loginForm})
         else:
-            #messages.success(request, 'Sesion Iniciada' )
             login(request,user)
             return redirect('adminIndex')
 
@@ -38,7 +36,7 @@ def index(request):
     lineasMapa = list(Linea.objects.annotate(punto_inicio_lat_float=Cast('punto_inicio__lat', FloatField())).annotate(punto_inicio_lon_float=Cast('punto_inicio__lon', FloatField())).annotate(punto_fin_lat_float=Cast('punto_fin__lat', FloatField())).annotate(punto_fin_lon_float=Cast('punto_fin__lon', FloatField())).values('id', 'punto_inicio_lat_float', 'punto_inicio_lon_float', 'punto_fin_lat_float', 'punto_fin_lon_float'))
     listaEdificaciones = list(Edificacion.objects.all().annotate(nombre_fk = Coalesce('pertenece__nombre', Value('-'))).values('id','nombre','piso','nombre_fk'))
     listaEntradas = list(EntradasEdificacion.objects.all().values('id','edificio__id','punto_camino__id'))
-    pruebaDJ()
+    #pruebaDJ()
     estructurasMapa = listaOrdenadaEstructuras()
     pisos = list(Edificacion.objects.values_list('piso', flat=True).distinct())
     return render(request, 'indexAdmin.html',{'puntosMapa':puntosMapa,'lineasMapa':lineasMapa,'listaEdificaciones':listaEdificaciones,'estructurasMapa':estructurasMapa,'pisos':pisos,'listaEntradas':listaEntradas})
@@ -128,7 +126,7 @@ def saveData(request):
 @require_http_methods(["GET", "POST"])
 def createEdificationPage(request):
     if request.method == 'GET':
-        return render(request, 'adminCreateEdification.html',{'form':createEdificationForm})
+        return render(request, 'adminCreateEdification.html',{'titulo_form':"Crear Edificacion",'form':createEdificationForm})
     elif request.method == 'POST':
         form = createEdificationForm(request.POST)
         if form.is_valid():
@@ -144,7 +142,7 @@ def updateEdificationPage(request,e_id):
     objeto = get_object_or_404(Edificacion,id = e_id)
     if request.method == 'GET':
         form = createEdificationForm(instance = objeto)
-        return render(request, 'adminCreateEdification.html',{'form':form})
+        return render(request, 'adminCreateEdification.html',{'titulo_form':"Editar Edificacion",'form':form})
     elif request.method == 'POST':
         form = createEdificationForm(request.POST,instance = objeto)
         if form.is_valid():
@@ -153,6 +151,18 @@ def updateEdificationPage(request,e_id):
             return redirect('viewEdification')
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
+    
+@login_required(login_url="adminLogin")
+def deleteEdificationPage(request,e_id):
+    objeto = get_object_or_404(Edificacion,id = e_id)
+    if objeto:
+        try:
+            objeto.delete()
+            #print("se elimino")
+            return redirect('viewEdification')
+        except:
+            #print('No se encontro ningun objeto')
+            return redirect('viewEdification')
 
 @login_required(login_url="adminLogin")
 def viewEdificationPage(request):

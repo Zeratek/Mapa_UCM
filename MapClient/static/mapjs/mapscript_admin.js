@@ -30,6 +30,7 @@ function RellenarMapaIniciales() {
             buildings.addLayer(polygon);
         }
     });
+    // Se rellena con las capas faltantes de pisos
     var modalDiv =  document.getElementById('layersModalBody'); 
     listaPisos.forEach(element => {
         
@@ -67,6 +68,9 @@ function customCtrl(m) {
                 '</button>'+
                 '<button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#toolsModal">'+
                     '<i class="bi bi-tools"></i>'+
+                '</button>'+
+                '<button type="button" onclick="saveData(link)" class="btn btn-secondary">'+
+                    '<i class="bi bi-save"></i>'+
                 '</button>'+
             '</div>'
             ;
@@ -172,7 +176,7 @@ function saveData(link) {
     xhr.onload = function() {
     if (xhr.status === 200) {
         console.log('Success');
-        //location.reload()
+        location.reload()
     } else {
         console.log('Error');
     }
@@ -211,6 +215,7 @@ function ListaParaGuardar()
           feature: layer.options.feature
         };
     });
+    // lista de estructuras a guardar o actualizar
     var newBuildEstructure = allBuildings.getLayers().filter(function(layer) 
     {
         return layer.options.feature === 'newBuild' || layer.options.feature === 'updBuild';
@@ -246,7 +251,7 @@ function ListaParaGuardar()
     });
 
     
-    console.log(dLayers);
+    //console.log(dLayers);
     //console.log(newPolylines);
     //console.log(newCircles);}
     listaFinal = [newCircles,newPolylines,newBuildEstructure,newEntrances,dLayers]
@@ -254,6 +259,7 @@ function ListaParaGuardar()
     return listaFinal;
 }
 
+//funcion que cambia la opcion de herramientas
 function CambiarOpcion(valor) {
     opcionesTrabajo = valor;
     newRoute = false;
@@ -289,6 +295,7 @@ function estructuraEdificio()
     }
 }
 
+//Funcion que muestra las opciones que aparecen al apretar una estructura nueva
 function BuildingOptions(e,map) 
 {
     selectedLayer = e.layer;
@@ -309,6 +316,7 @@ function BuildingOptions(e,map)
     L.DomEvent.stopPropagation(e);
 }
 
+//Funcion que muestra las opciones que aparecen al apretar una estructura antigua o que ya se le añadio un id de edificio
 function CreatedBuildingOptions(e,map) 
 {
     selectedLayer = e.layer;
@@ -447,6 +455,7 @@ function EditarAsEdificacionAEstructura()
     }
 }
 
+// funcion que permite eliminar una ruta del mapa
 function removeLine() 
 {
     cerrarPopup();
@@ -464,6 +473,7 @@ function removeLine()
     }
 }
 
+// funcion que permite eliminar una estructura del mapa
 function removeBuild() 
 {
     cerrarPopup();
