@@ -34,21 +34,21 @@
     </nav>
     <div class="offcanvas offcanvas-start bg-dark text-white" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="SideBar">
         <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="SideBarTitle">Titulo</h5>
+          <h5 class="offcanvas-title" id="SideBarTitle">Universidad Católica del Maule</h5>
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body" id="SideBarBody">
           <div>
-                Aqui iria informacion de los edificios, salas, carreras
+                ¡Bienvenidos al mapa de la Universidad Católica del Maule!
           </div>
         </div>
     </div>
-    <div class="container mt-4">
-        
+    <div class="container-fluid mt-4">
+        <div class="d-flex justify-content-center">
         {% block MapaUCM %}
 
         {% endblock %}
-       
+        </div>
     </div>
     {% block scripts %}
             

@@ -102,26 +102,6 @@ def puntoMasCercano(lat,lon):
     #print(disMasCercano)
     return masCercano,disMasCercano
 
-"""
-def obtener_conexiones():
-    conexiones = Linea.objects.values('punto_inicio').annotate(
-        conexion=Cast('punto_fin', IntegerField()),
-        peso=Cast('peso', IntegerField())
-    ).values('punto_inicio', 'conexion', 'peso')
-
-    graph = {}
-    for conexion in conexiones:
-        idpunto1 = str(conexion['punto_inicio'])
-        conexion_id = str(conexion['conexion'])
-        peso = conexion['peso']
-
-        if idpunto1 not in graph:
-            graph[idpunto1] = {}
-
-        graph[idpunto1][conexion_id] = peso
-
-    return graph
-"""
 def obtener_conexiones():
     conexiones = Linea.objects.values('punto_inicio', 'punto_fin', 'peso')
 
