@@ -39,26 +39,26 @@
         </div>
     </nav>
     {% if user.is_authenticated %}
-    <div class="offcanvas offcanvas-start bg-dark text-white" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="SideBar">
+    <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="SideBar">
         <div class="offcanvas-header">
-          <h5 class="offcanvas-title" id="SideBarTitle"><a class=" text-white text-lg text-decoration-none" style="font-size: 40px;">Menu</a></h5>
+          <h5 class="offcanvas-title" id="SideBarTitle"><a class="text-lg text-decoration-none" style="font-size: 40px;">Menu</a></h5>
           <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body" id="A">
             <ul class="nav nav-pills flex-column mb-sm-auto mb-0  align-items-sm-start" id="menu">
                 <li class="nav-item">
-                    <a href="{% url 'adminIndex'%}" class="nav-link align-middle px-0">
-                        <i class="fs-4 bi-house"></i>Inicio
+                    <a href="{% url 'adminIndex'%}" class="nav-link align-middle px-0 h3">
+                        <i class="bi-house fa-lg"></i>Inicio(Mapa)
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'viewEdification'%}" class="nav-link align-middle px-0">
-                        <i class="fs-4 bi-building"></i>Administrar Edificaciones
+                    <a href="{% url 'viewEdification'%}" class="nav-link align-middle px-0 h3">
+                        <i class="bi-building fa-lg"></i>Administrar Edificaciones
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'adminLogout'%}" class="nav-link align-middle px-0">
-                        <i class="fs-4 bi-box-arrow-left"></i>Cerrar Sesion
+                    <a href="{% url 'adminLogout'%}" class="nav-link align-middle px-0 h3">
+                        <i class="bi-box-arrow-left fa-lg"></i>Cerrar Sesion
                     </a>
                 </li>
             </ul>
