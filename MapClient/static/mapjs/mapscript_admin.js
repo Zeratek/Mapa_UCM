@@ -43,7 +43,7 @@ function RellenarMapaIniciales() {
         div.innerHTML = '<input class="form-check-input" onchange="quitar(this.checked,' + element + ')" type="checkbox" value="" id="flexCheckDefault' + element + '"'+chek+'><label class="form-check-label" for="flexCheckDefault' + element + '">Piso ' + element + '</label>';
         modalDiv.appendChild(div);
     });
-    
+    routePoints.bringToFront();
 };
 
 function rellenarLayerOpciones() 
@@ -84,7 +84,7 @@ function RouteLinesOptions(e,map) {
     selectedLayer = e.layer;
         var popupContent = 
             '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-                '<button onclick="removeLine()" class="btn btn-secondary">'+
+                '<button onclick="removeLine();cerrarPopup();" class="btn btn-secondary">'+
                     'Eliminar Camino'+
                 '</button>'+
             '</div>'
@@ -153,7 +153,6 @@ function crearEdificio()
             var latlng = layer.getLatLng();
             return [latlng.lat,latlng.lng];
         });
-        console.log(ListaPuntos);
         var polygon = L.polygon(ListaPuntos,{color: 'grey',fillColor: 'grey'}).addTo(buildStructures);
         //map.fitBounds(polygon.getBounds());
         buildingPoints.clearLayers();
@@ -221,7 +220,7 @@ function ListaParaGuardar()
         return layer.options.feature === 'newBuild' || layer.options.feature === 'updBuild';
     }).map(function(layer){
         var latlngs = layer.getLatLngs();
-        console.log(latlngs);
+        //console.log(latlngs);
         if (!('new_id_value' in selectedLayer.options)) {
             return {
                 coords:latlngs,
@@ -236,7 +235,7 @@ function ListaParaGuardar()
             };
         }
     });
-    console.log(newBuildEstructure);
+    //console.log(newBuildEstructure);
     //lista de nuevas entradas
     var newEntrances = listaEntradas.filter(function(entry) {
         return entry.feature === 'newEntry'||entry.feature === 'delEntry'
@@ -266,7 +265,6 @@ function CambiarOpcion(valor) {
     selectedCircle = null;
     lastCircle = null;
     secondLastCircle = null;
-    console.log(opcionesTrabajo)
 }
 //funcion que muestra la estructura del edificio uniendo Circulos con Polylines
 function estructuraEdificio() 
@@ -380,10 +378,10 @@ function asociarEstructura()
 {
     if (!('feature' in selectedLayer.options)) 
     {
-        console.log('Nuevo')
+        //console.log('Nuevo')
         asociarEdificacionAEstructura();
     } else {
-        console.log('Antiguo')
+        //console.log('Antiguo')
         EditarAsEdificacionAEstructura();
     }
 }
@@ -393,7 +391,7 @@ function asociarEdificacionAEstructura()
 {
     let select = document.getElementById('selectorEdificacion');
     let opcionSeleccionada = select.options[select.selectedIndex].value;
-    console.log(opcionSeleccionada);
+    //console.log(opcionSeleccionada);
     if (opcionSeleccionada==="0") {
         return;
     }
@@ -415,13 +413,13 @@ function asociarEdificacionAEstructura()
     let layerName = 'flexCheckDefault'+selectedDict.piso;
     if (document.getElementById(layerName).checked) 
     {
-        console.log("añade al buildings");
+        //console.log("añade al buildings");
         buildStructures.removeLayer(selectedLayer);
         allBuildings.addLayer(selectedLayer);
         buildings.addLayer(selectedLayer);
     } else 
     {
-        console.log("no lo añade al buildings");
+        //console.log("no lo añade al buildings");
         alert("Se ha movido a la capa piso"+selectedDict.piso);
         buildStructures.removeLayer(selectedLayer);
         allBuildings.addLayer(selectedLayer);
@@ -448,7 +446,7 @@ function EditarAsEdificacionAEstructura()
         selectedLayer.options.id_value = parseInt(opcionSeleccionada);
         selectedLayer.options.piso = selectedDict.piso;
         selectedLayer.options.nombre_fk = selectedDict.nombre_fk;
-        console.log('Entro a nuewBuild')
+        //console.log('Entro a nuewBuild')
         var tooltip = selectedLayer.getTooltip();
         tooltip.setContent(selectedDict.nombre);
     } else 
@@ -461,7 +459,7 @@ function EditarAsEdificacionAEstructura()
     let layerName = 'flexCheckDefault'+selectedDict.piso;
     if (document.getElementById(layerName).checked) 
     {
-        console.log("añade al buildings");
+        //console.log("añade al buildings");
         buildings.addLayer(selectedLayer);
     }
 }
@@ -473,7 +471,7 @@ function existeEstructura(opcionSeleccionada)
     {
         return layer.options.id_value === opcion || layer.options.new_id_value === opcion;
     });
-    console.log(existe);
+    //console.log(existe);
     if (existe.length > 0) {
         return true;
     } else {
@@ -483,7 +481,6 @@ function existeEstructura(opcionSeleccionada)
 // funcion que permite eliminar una ruta del mapa
 function removeLine() 
 {
-    cerrarPopup();
     if (selectedLayer.options.feature === "newPoly")
     {
         routesPolylines.removeLayer(selectedLayer);
@@ -514,42 +511,28 @@ function removeBuild()
         selectedLayer.options.feature = "delBuild";
         buildings.removeLayer(selectedLayer);
         deletedLayers.addLayer(selectedLayer);
-        //console.log(selectedLayer);
-        //console.log(deletedLayers.getLayers());
     }
-    console.log(listaEntradas);
     let lEntradasEliminar = [];
     listaEntradas.forEach(entrada => {
         if (entrada.edificio__id === selectedLayer.options.id_value || entrada.edificio__id === selectedLayer.options.new_id_value) 
         {
-            console.log(entrada);
             if (!('feature' in entrada)) {
                 entrada["feature"] = "delEntry";
             } 
             else
             {
-                //let indice = listaEntradas.indexOf(entrada);
                 lEntradasEliminar.push(entrada);
-                /*
-                if (indice !== -1) 
-                {
-                    listaEntradas.splice(indice, 1);
-                }
-                */
             }
         }
     });
-    //console.log(lEntradasEliminar);
     //se eleminan las entradas newEntry de la lista
     lEntradasEliminar.forEach(element => {
-        console.log(listaEntradas.indexOf(element));
         let indice = listaEntradas.indexOf(element);
         if (indice !== -1) 
         {
             listaEntradas.splice(indice, 1);
         }
     });
-    console.log(listaEntradas);
     stopEntrance();
 }
 

@@ -132,8 +132,7 @@
     var listaEdificacionesIniciales = JSON.parse(document.getElementById('listaEdificaciones_json').textContent);
     var listaEntradas = JSON.parse(document.getElementById('listaEntradas_json').textContent);
     var listaPisos = JSON.parse(document.getElementById('pisos_json').textContent);
-    var link = "{% url 'saveData' %}"
-    console.log(link);
+    var link = "{% url 'saveData' %}";
     var map = createMap([-35.43559,-71.61971], 17);
     //Variables de opociones
     var opcionesTrabajo = "1";
@@ -198,7 +197,6 @@
         } else if (opcionesTrabajo==="2")//Construccion de Edificios 
         {
             var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint',color:"green"}).addTo(buildingPoints);
-            console.log("hola");
             if (lastCircle != null) {
                 secondLastCircle = lastCircle;
                 lastCircle = buildingPoints.getLayers()[buildingPoints.getLayers().length - 1];
@@ -231,19 +229,13 @@
                         return JSON.stringify(eLatLng) === JSON.stringify(lLatLngOne) && JSON.stringify(lastLatLng) === JSON.stringify(lLatLngTwo) || JSON.stringify(lastLatLng) === JSON.stringify(lLatLngOne) && JSON.stringify(eLatLng) === JSON.stringify(lLatLngTwo);
                     });
                     if (existeLinea.length === 0) {
-                        console.log(existeLinea);
                         secondLastCircle = lastCircle;
                         lastCircle = e.layer;
                         var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
                         L.DomEvent.stopPropagation(e);
                     }
-                    else
-                    {
-                        console.log(existeLinea);
-                    }
                 } else 
                 {
-                console.log("Iguales")
                 L.DomEvent.stopPropagation(e);
                 }
             }
@@ -263,12 +255,10 @@
                     e.layer.setStyle({fillColor: 'red'});
                     listaEntradas.push(dict)
                     auxiliarEntranceList.addLayer(e.layer);
-                    console.log(listaEntradas);
                 }
                 else{
                     if (!('feature' in existe)) {
                         existe["feature"] = "delEntry";
-                        console.log(listaEntradas);
                         e.layer.setStyle({fillColor: 'blue'});
                     } 
                     else if (existe["feature"] === "newEntry") 
@@ -278,13 +268,11 @@
                         {
                             listaEntradas.splice(indice, 1);
                         }
-                        console.log(listaEntradas);
                         e.layer.setStyle({fillColor: 'blue'});
                     }
                     else{
                         delete existe["feature"];
                         e.layer.setStyle({fillColor: 'red'});
-                        console.log(listaEntradas);
                     }
                     
                 }
@@ -303,47 +291,39 @@
 
     map.on('contextmenu', function(e) 
     {
-        console.log(entrances);
         newRoute = true;
         stopEntrance();
     });
 
     //Funcion click derecho de lineas de camino que muestra las opciones que se pueden realizar
     routesPolylines.on('contextmenu', function(e) 
-    {
-        RouteLinesOptions(e,map);
+    {   
+        if (opcionesTrabajo === "1") {
+            RouteLinesOptions(e,map);
+        }
     });
 
-    //Funciones para creacion de edificios
-    buildingPoints.on('click', function(e) 
-    {
-        if (e.layer != lastCircle) {
-            //console.log("distintos")
-            secondLastCircle = lastCircle;
-            lastCircle = e.layer;
-            var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(routesPolylines);
-            L.DomEvent.stopPropagation(e);
-        } else {
-            //console.log("Iguales")
-            L.DomEvent.stopPropagation(e);
-        }
-        
-    });
 
     //Funcion click derecho de un punto de una estructura de edificacion que muestra las opciones que se pueden realizar
     buildingPoints.on('contextmenu', function(e) 
     {
-        BuildingPointsOptions(e,map);
+        if (opcionesTrabajo === "2") {
+            BuildingPointsOptions(e,map);
+        }
     });
     
     //Funcion click derecho de edificacion creada que muestra las opciones que se pueden realizar
     buildings.on('contextmenu', function(e) 
     {
-        CreatedBuildingOptions(e,map);
+        if (opcionesTrabajo === "2") {
+            CreatedBuildingOptions(e,map);
+        }
     });
     buildStructures.on('contextmenu', function(e) 
     {
-        BuildingOptions(e,map);
+        if (opcionesTrabajo === "2") {
+            BuildingOptions(e,map);
+        }
     });
     buildings.on('click', function(e) 
     {
@@ -368,12 +348,10 @@
         else if (opcionesTrabajo==="2" && entrances === false)//Construccion de Edificios 
         {
             var circle = L.circle(e.latlng, {radius: 2,feature: 'newPoint',color:"green"}).addTo(buildingPoints);
-            console.log("hola");
             if (lastCircle != null) {
                 secondLastCircle = lastCircle;
                 lastCircle = buildingPoints.getLayers()[buildingPoints.getLayers().length - 1];
                 estructuraEdificio();
-                //var polyline = L.polyline([lastCircle.getLatLng(), secondLastCircle.getLatLng()],{feature: 'newPoly'}).addTo(buildingPolylines);
             }
             else
             {
@@ -414,15 +392,10 @@
         routesPolylines.eachLayer(function(layer)
         {
             var latlngs = layer.getLatLngs();
-            //console.log('latLngRemover');
-            //console.log(latLngRemover);
-            //console.log('latlngs');
-            //console.log(latlngs);
             newRoute = true;
             if(latlngs[0].lat == latLngRemover.lat && latlngs[0].lng == latLngRemover.lng || latlngs[latlngs.length-1].lat == latLngRemover.lat && latlngs[latlngs.length-1].lng == latLngRemover.lng)
             {
                 routesPolylines.removeLayer(layer);
-                //layer.setStyle({opacity: 0})
             }
             map.closePopup();
         });
@@ -430,14 +403,11 @@
 
     //Funcion que quita las capas del mapa
     function quitar(valor,objetos) {
-        //console.log(valor);
-        //console.log(typeof objetos);
         if (typeof objetos === "number") {
             filteredLayers = allBuildings.getLayers().filter(function(layer) 
             {
                 return layer.options.piso === objetos && layer.options.nombre_fk !== "-";
             });
-            console.log(filteredLayers);
             if (valor) {
                 filteredLayers.forEach(element => {
                     buildings.addLayer(element);
@@ -458,6 +428,7 @@
             }
         });
         }
+        routePoints.bringToFront();
     }
 </script>
     
