@@ -14,6 +14,7 @@ from .forms import createEdificationForm,loginForm
 import math
 import heapq
 
+#pagina de login
 def login_page(request):
     if request.method == 'GET':
         return render(request, 'adminLogin.html', {'form': loginForm})
@@ -29,34 +30,16 @@ def logout_page(request):
     logout(request)
     return redirect('adminLogin')
 
-# Create your views here.
+#pagina de mapa con herramientas
 @login_required(login_url="adminLogin")
 def index(request):
     puntosMapa = list(Punto.objects.annotate(lat_float=Cast('lat', FloatField())).annotate(lon_float=Cast('lon', FloatField())).values('id', 'lat_float', 'lon_float'))
     lineasMapa = list(Linea.objects.annotate(punto_inicio_lat_float=Cast('punto_inicio__lat', FloatField())).annotate(punto_inicio_lon_float=Cast('punto_inicio__lon', FloatField())).annotate(punto_fin_lat_float=Cast('punto_fin__lat', FloatField())).annotate(punto_fin_lon_float=Cast('punto_fin__lon', FloatField())).values('id', 'punto_inicio_lat_float', 'punto_inicio_lon_float', 'punto_fin_lat_float', 'punto_fin_lon_float'))
     listaEdificaciones = list(Edificacion.objects.all().annotate(nombre_fk = Coalesce('pertenece__nombre', Value('-'))).values('id','nombre','piso','nombre_fk'))
     listaEntradas = list(EntradasEdificacion.objects.all().values('id','edificio__id','punto_camino__id'))
-    #pruebaDJ()
     estructurasMapa = listaOrdenadaEstructuras()
     pisos = list(Edificacion.objects.values_list('piso', flat=True).distinct())
     return render(request, 'indexAdmin.html',{'puntosMapa':puntosMapa,'lineasMapa':lineasMapa,'listaEdificaciones':listaEdificaciones,'estructurasMapa':estructurasMapa,'pisos':pisos,'listaEntradas':listaEntradas})
-
-def pruebaDJ():
-    graph = {
-    '1': {'2': 17,'5': 13},
-    #'1': {'5': 13},
-    '2': {'3': 10},
-    '3': {'4': 5},
-    '5': {'4': 5},
-    '4': {}
-    }
-
-    start = '1'
-    end = '4'
-
-    shortest_distance, shortest_path = dijkstra(graph, start, end)
-    print(f"Distancia más corta: {shortest_distance}")
-    print(f"Camino más corto: {shortest_path}")
 
 @login_required(login_url="adminLogin")
 def saveData(request):
@@ -82,29 +65,28 @@ def saveData(request):
                     distancia = haversine(diccionario['lat1'], diccionario['lon1'], diccionario['lat2'], diccionario['lon2'])
                     linea = Linea(punto_inicio=puntoUno,punto_fin=puntoDos,peso=distancia)
                     linea.save()
-                    print(distancia)
-                    print("linea guardada")
+                    #print("linea guardada")
                 elif diccionario['feature'] == 'newBuild':
                     obj = Edificacion.objects.get(id=diccionario['id'])
-                    print(diccionario["coords"])
+                    #print(diccionario["coords"])
                     for item in diccionario["coords"][0]:
                         estructura = EstructuraEdificacion(edificacion=obj,lat=item['lat'],lon=item['lng'])
                         estructura.save()
-                        print("punto de estructura guardado")
-                    print("estructura guardada")
+                        #print("punto de estructura guardado")
+                    #print("estructura guardada")
                 elif diccionario['feature'] == 'updBuild':
                     obj = Edificacion.objects.get(id=diccionario['new_id'])
                     puntos = EstructuraEdificacion.objects.filter(edificacion__id=diccionario['id'])
                     for punto in puntos:
                         punto.edificacion = obj
                         punto.save()
-                    print('Se han actualizado los puntos de estructura')
+                    #print('Se han actualizado los puntos de estructura')
                 elif diccionario['feature'] == 'newEntry':
                     obj_edificio = Edificacion.objects.get(id=diccionario['edificio__id'])
                     obj_Punto = Punto.objects.get(id=diccionario['punto_camino__id'])
                     entrada = EntradasEdificacion(edificio=obj_edificio,punto_camino=obj_Punto)
                     entrada.save()
-                    print("Entrada Guardada")
+                    #print("Entrada Guardada")
                 else:
                     if diccionario['feature'] == 'delPoint':
                         obj = get_object_or_404(Punto,id=diccionario['id'])
@@ -114,10 +96,10 @@ def saveData(request):
                         obj = EstructuraEdificacion.objects.filter(edificacion__id=diccionario['id'])
                     elif diccionario['feature'] == 'delEntry':
                         obj = get_object_or_404(EntradasEdificacion,id=diccionario['id'])
-                        print("se encontro la entrada")
+                        #print("se encontro la entrada")
                     try:
                         obj.delete()
-                        print("se elimino")
+                        #print("se elimino")
                     except:
                         print('No se encontro ningun objeto')
     return JsonResponse([],safe=False)

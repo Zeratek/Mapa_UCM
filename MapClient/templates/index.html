@@ -18,7 +18,7 @@
         </div>
         
         <div class="justify-content-center">
-            <div id="map" style="min-height: 85vh;"></div>
+            <div id="map" style="min-height: 80vh;"></div>
         </div>
     </div>
 </div>
@@ -76,6 +76,7 @@
     //rellena el mapa con estructuras y layers de pisos en el modal
     RellenarMapaIniciales()
     var selectedLayer;
+    var targetGPSLayer;
     var link_ruta = "{% url 'rutaCorta' 'p_lat' 'p_lon' 'e_id' %}"
     var userPositionMarker = null;
     var contextmenuPosition = null;

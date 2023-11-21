@@ -9,7 +9,8 @@ from django.db.models import FloatField,Value,Q,F,Count,IntegerField
 def index(request):
     estructurasMapa = listaOrdenadaEstructuras()
     pisos = list(Edificacion.objects.values_list('piso', flat=True).distinct())
-    listaEdificaciones = list(Edificacion.objects.all().annotate(nombre_fk = Coalesce('pertenece__nombre', Value('-'))).values('id','nombre','piso','nombre_fk','informacion'))
+    listaEstructurasEdificaciones = EstructuraEdificacion.objects.values('edificacion').distinct()
+    listaEdificaciones = list(Edificacion.objects.filter(id__in=listaEstructurasEdificaciones).annotate(nombre_fk = Coalesce('pertenece__nombre', Value('-'))).values('id','nombre','piso','nombre_fk','informacion'))
     puntosMapa = list(Punto.objects.annotate(lat_float=Cast('lat', FloatField())).annotate(lon_float=Cast('lon', FloatField())).values('id', 'lat_float', 'lon_float'))
     lineasMapa = list(Linea.objects.annotate(punto_inicio_lat_float=Cast('punto_inicio__lat', FloatField())).annotate(punto_inicio_lon_float=Cast('punto_inicio__lon', FloatField())).annotate(punto_fin_lat_float=Cast('punto_fin__lat', FloatField())).annotate(punto_fin_lon_float=Cast('punto_fin__lon', FloatField())).values('id', 'punto_inicio_lat_float', 'punto_inicio_lon_float', 'punto_fin_lat_float', 'punto_fin_lon_float'))
     #print(obtener_conexiones())
@@ -35,6 +36,9 @@ def calcularCamino(request,p_lat,p_lon,e_id):
     if len(entradas)>0:
         for i in range(len(entradas)):
             id_entrada = entradas[i]['punto_camino__id']
+            if id_entrada == puntoCercano:
+                mismoPunto =  list(Punto.objects.filter(id=id_entrada).annotate(lat_float=Cast('lat', FloatField())).annotate(lon_float=Cast('lon', FloatField())).values('id', 'lat_float', 'lon_float'))
+                return JsonResponse([mismoPunto,[],round(distInicial,2)], safe=False)
             #print(id_entrada)
             #aux_shortest_distance, aux_shortest_path = dijkstra(graph, str(puntoCercano), str(entradas[i]['punto_camino__id']))
             aux_shortest_distance, aux_shortest_path = dijkstra(graph, str(puntoCercano), str(id_entrada))
@@ -50,12 +54,15 @@ def calcularCamino(request,p_lat,p_lon,e_id):
                     pass
             #print(f"Distancia más corta: {shortest_distance}")
             #print(f"Camino más corto: {shortest_path}")
+        #print(shortest_path)
+        if not shortest_path:
+            return JsonResponse([None,None], safe=False)
     else:
         #print("no tiene entradas")
         return JsonResponse([None,None], safe=False)
     listaPuntos=[]
     listaLineas=[]
-    obj3 = Linea.objects.filter(punto_inicio=1).values()
+    #obj3 = Linea.objects.filter(punto_inicio=1).values()
     #print(graph)
     for i in range(len(shortest_path) - 1):
         obj1 = Punto.objects.filter(id=shortest_path[i]).annotate(lat_float=Cast('lat', FloatField())).annotate(lon_float=Cast('lon', FloatField())).values('id', 'lat_float', 'lon_float')[0]
@@ -78,8 +85,10 @@ def calcularCamino(request,p_lat,p_lon,e_id):
     #print(listaPuntos)
     #print("-------------------")
     #print(listaLineas)
-    
-    return JsonResponse([listaPuntos,listaLineas,shortest_distance+distInicial], safe=False)
+    total_distance = shortest_distance+distInicial
+    #print(total_distance)
+    total_distance = round(total_distance,2)
+    return JsonResponse([listaPuntos,listaLineas,total_distance], safe=False)
 
 def puntoMasCercano(lat,lon):
     puntos = Punto.objects.annotate(lat_float=Cast('lat', FloatField())).annotate(lon_float=Cast('lon', FloatField())).values('id', 'lat_float', 'lon_float')
