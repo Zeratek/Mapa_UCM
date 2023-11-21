@@ -127,7 +127,7 @@ function buscarInformacionEficio()
             alert('no se encontro la estructura');
         }
     } else {
-        alert('no existe');
+        alert('No se ha encontrado');
     }
 }
 
@@ -181,14 +181,8 @@ function UpdatePosition(position) {
     let fetchLink;
     if (userPositionMarker) {
         userPositionMarker.setLatLng(coords);
-        //map.setView(userPositionMarker.getLatLng(), 18);
-        //map.fitBounds(userPositionMarker.getLatLng());
-        //map.flyTo(userPositionMarker.getLatLng(), 20);
     } else {
-        userPositionMarker = L.circle(coords,{radius:5}).addTo(map).bindPopup("Estás aquí");
-        //map.setView(userPositionMarker.getLatLng(), 18);
-        //map.fitBounds(userPositionMarker.getLatLng());
-        //map.flyTo(userPositionMarker.getLatLng(), 20);
+        userPositionMarker = L.marker(coords,{radius:5}).addTo(map).bindPopup("Estás aquí");
     }
     fetchLink = link_ruta.replace("p_lat", coords[0]);
     fetchLink = fetchLink.replace("p_lon", coords[1]);
@@ -224,11 +218,25 @@ function UpdatePosition(position) {
 }
 
 //funcion que muestra el error al realizar intentar geolocalizacion
-function handleError(error) {
+function handleError(locError) {
     //console.log('Error:', error);
     //alert(error);
+    switch (locError.code) {
+        case locError.PERMISSION_DENIED:
+            alert("Debe permitir el acceso a su posición para que la aplicación pueda funcionar");
+            break;
+        case locError.POSITION_UNAVAILABLE:
+            alert("La información sobre su posición actual no está disponible");
+            break;
+        case locError.TIMEOUT:
+            alert("No se podudo obtener su posición en el tiempo estipulado");
+            break;
+        default:
+            alert("Se ha producido un error desconocido al intentar obtener la posición actual");
+            break;
+    }
     stopLocate();
-    alert('Error: No se ha logrado acceder al GPS');
+    //alert('Error: No se ha logrado acceder a la posicion');
 }
 
 //funcion que inicia la geolocalizacion
@@ -240,7 +248,7 @@ function UserPosConf()
     targetGPSLayer = selectedLayer;
     if (ejecuteLocation === false) {
         ejecuteLocation=true;
-        idEjecute = navigator.geolocation.watchPosition(UpdatePosition, handleError);
+        idEjecute = navigator.geolocation.watchPosition(UpdatePosition, handleError,{enableHighAccuracy: true});
         //console.log(idEjecute);
     }
 }
@@ -260,9 +268,6 @@ function InformacionEdificacion()
     SideBarTitleElem.innerHTML = edificacionSelect.nombre;
     texto = edificacionSelect.informacion.replace(/\n/g, "<br>");
     SideBodyElem.innerHTML = texto;
-    //var offcanvasInstance = bootstrap.Offcanvas.getInstance(SideBar);
-    //var offcanvasInstance = new bootstrap.Offcanvas(SideBar);
-    //offcanvasInstance.show();
 }
 
 //funcion que termina la geolocalizacion
@@ -276,7 +281,8 @@ function stopLocate()
         routePoints.clearLayers();
         routesPolylines.clearLayers();
     }
-    
+    map.removeLayer(userPositionMarker);
+    userPositionMarker = null;
 }
 //funcion que cierra los popups
 function cerrarPopup() 

@@ -45,7 +45,7 @@ def index(request):
 def saveData(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        print(data)
+        #print(data)
         for lista in data:
             if not lista:
                 continue
@@ -219,7 +219,7 @@ def haversine(lat1, lon1, lat2, lon2):
     resultado = latitudUno = round(R * c,1)
     return resultado
 
-
+# funcion que calcula el camino
 def dijkstra(graph, start, end):
     distances = {node: float('inf') for node in graph}
     distances[start] = 0
