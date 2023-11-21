@@ -87,7 +87,7 @@ function customCtrl(m) {
         }});
     return control;
 };
-
+//funcion que muestra busca la edificacion acerca el mapa y muestra la informacion en barra lateral
 function buscarInformacionEficio() 
 {
     let obj = document.getElementById("inputListaEdificios");
@@ -131,6 +131,7 @@ function buscarInformacionEficio()
     }
 }
 
+//funcion que muestra los popups
 function BuildingOptions(e,map) 
 {   
     if (selectedLayer) {
@@ -156,6 +157,7 @@ function BuildingOptions(e,map)
     L.DomEvent.stopPropagation(e);
 }
 
+//funcion que muestra el popup para terminar la geolocalizacion
 function MapOptions(e,map) {
     contextmenuPosition = e.latlng;
     let btnStop = '';
@@ -170,16 +172,6 @@ function MapOptions(e,map) {
         .setContent(btnStop)
         .openOn(map);
     }
-    /*
-    var popupContent = 
-    '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-        '<button onclick="UserPosConf(false);cerrarPopup();" class="btn btn-secondary">'+
-            'Marcar Posicion'+
-        '</button>'+
-        btnStop+
-    '</div>'
-    ;
-    */
     L.DomEvent.stopPropagation(e);
 }
 
@@ -200,60 +192,56 @@ function UpdatePosition(position) {
     }
     fetchLink = link_ruta.replace("p_lat", coords[0]);
     fetchLink = fetchLink.replace("p_lon", coords[1]);
-    fetchLink = fetchLink.replace("e_id", selectedLayer.options.id_value);
+    fetchLink = fetchLink.replace("e_id", targetGPSLayer.options.id_value);
     fetch(fetchLink)
         .then(response => response.json())
         .then(data =>{
             if (data[0] === null) {
                 stopLocate();
-                alert("no tiene entradas");
+                alert("no tiene entradas o camino existente");
             } else {
-                userPositionMarker.getPopup().setContent("Estás aquí, Distancia destino: "+data[2]+"metros");
-                puntosRuta = data[0];
-                caminoRuta = data[1];
-                if (routePoints.getLayers().length != 0 && routesPolylines.getLayers().length != 0) {
-                    routePoints.clearLayers();
-                    routesPolylines.clearLayers();
+                if (ejecuteLocation === true) {
+                    userPositionMarker.getPopup().setContent("Estás aquí, Distancia destino: "+data[2]+"metros");
+                    puntosRuta = data[0];
+                    caminoRuta = data[1];
+                    if (routePoints.getLayers().length != 0 && routesPolylines.getLayers().length != 0) {
+                        routePoints.clearLayers();
+                        routesPolylines.clearLayers();
+                    }
+                    puntosRuta.forEach(element => {
+                        var circle = L.circle([element.lat_float,element.lon_float], {radius: 2,fillColor:"blue",feature: 'oldPoint',id_value:element.id}).addTo(routePoints);
+                    });
+                    let element = puntosRuta[0];
+                    //console.log(element)
+                    var polyline = L.polyline([coords, [element.lat_float,element.lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
+                
+                    caminoRuta.forEach(element => {
+                        var polyline = L.polyline([[element.punto_inicio_lat_float,element.punto_inicio_lon_float], [element.punto_fin_lat_float,element.punto_fin_lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
+                    });
                 }
-                puntosRuta.forEach(element => {
-                    var circle = L.circle([element.lat_float,element.lon_float], {radius: 2,fillColor:"blue",feature: 'oldPoint',id_value:element.id}).addTo(routePoints);
-                });
-                let element = puntosRuta[0];
-                console.log(element)
-                var polyline = L.polyline([coords, [element.lat_float,element.lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
-            
-                caminoRuta.forEach(element => {
-                    var polyline = L.polyline([[element.punto_inicio_lat_float,element.punto_inicio_lon_float], [element.punto_fin_lat_float,element.punto_fin_lon_float]],{feature: 'oldPoly',id_value:element.id}).addTo(routesPolylines);
-                });
             }
         });
 }
 
+//funcion que muestra el error al realizar intentar geolocalizacion
 function handleError(error) {
-    console.log('Error:', error);
-    alert(error);
-  }
-function UserPosConf(gps_info) 
+    //console.log('Error:', error);
+    //alert(error);
+    stopLocate();
+    alert('Error: No se ha logrado acceder al GPS');
+}
+
+//funcion que inicia la geolocalizacion
+function UserPosConf() 
 {
-    if (gps_info) {
-        //console.log('Actualizanco latlon usuario');
-        //map.locate({ setView: true, enableHighAccuracy: true });
-        
-        if (ejecuteLocation === false) {
-            ejecuteLocation=true;
-            //console.log("entro")
-            //idEjecute = setInterval(UpdateUserPosition, 4000);
-            idEjecute = navigator.geolocation.watchPosition(UpdatePosition, handleError);
-            console.log(idEjecute);
-        }
-    } else {
-        if (userPositionMarker) {
-            userPositionMarker.setLatLng(contextmenuPosition);
-        } else {
-            //userPositionMarker = L.circle(contextmenuPosition,{radius:1}).addTo(map).bindPopup("Estás aquí").openPopup();
-            userPositionMarker = L.circle(contextmenuPosition,{radius:5}).addTo(map).bindPopup("Estás aquí");
-            
-        }
+    if (ejecuteLocation) {
+        stopLocate();
+    }
+    targetGPSLayer = selectedLayer;
+    if (ejecuteLocation === false) {
+        ejecuteLocation=true;
+        idEjecute = navigator.geolocation.watchPosition(UpdatePosition, handleError);
+        //console.log(idEjecute);
     }
 }
 
@@ -268,25 +256,29 @@ function InformacionEdificacion()
     //console.log(edificacionSeleccionada);
     let SideBar = document.getElementById('SideBar');
     let SideBarTitleElem = document.getElementById('SideBarTitle');
-    let SideBodyElem = document.getElementById('SideBarBody');
+    let SideBodyElem = document.getElementById('SideBarBodyv2');
     SideBarTitleElem.innerHTML = edificacionSelect.nombre;
-    SideBodyElem.innerHTML = edificacionSelect.informacion;
+    texto = edificacionSelect.informacion.replace(/\n/g, "<br>");
+    SideBodyElem.innerHTML = texto;
     //var offcanvasInstance = bootstrap.Offcanvas.getInstance(SideBar);
-    var offcanvasInstance = new bootstrap.Offcanvas(SideBar);
-    offcanvasInstance.show();
+    //var offcanvasInstance = new bootstrap.Offcanvas(SideBar);
+    //offcanvasInstance.show();
 }
 
+//funcion que termina la geolocalizacion
 function stopLocate() 
 {
     //clearInterval(idEjecute);
     navigator.geolocation.clearWatch(idEjecute);
     ejecuteLocation = false;
+    targetGPSLayer = null;
     if (routePoints.getLayers().length != 0 && routesPolylines.getLayers().length != 0) {
         routePoints.clearLayers();
         routesPolylines.clearLayers();
     }
     
 }
+//funcion que cierra los popups
 function cerrarPopup() 
 {
     map.closePopup();

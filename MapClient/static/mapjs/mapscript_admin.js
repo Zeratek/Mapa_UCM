@@ -121,10 +121,10 @@ function BuildingPointsOptions(e,map) {
     selectedCircle = e.layer;
     var popupContent = 
         '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-            '<button onclick="removeCirclesBuilding()" class="btn btn-secondary">'+
+            '<button onclick="removeCirclesBuilding();cerrarPopup();" class="btn btn-secondary">'+
                 'Eliminar Puntos'+
             '</button>'+
-            '<button onclick="crearEdificio()" class="btn btn-secondary">'+
+            '<button onclick="crearEdificio();cerrarPopup();" class="btn btn-secondary">'+
                 'Crear Estructura'+
             '</button>'+
         '</div>'
@@ -301,10 +301,10 @@ function BuildingOptions(e,map)
     selectedLayer = e.layer;
     var popupContent = 
         '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-            '<button onclick="removeBuild()" class="btn btn-secondary">'+
+            '<button onclick="removeBuild();cerrarPopup();" class="btn btn-secondary">'+
                 'Eliminar'+
             '</button>'+
-            '<button onclick="cerrarPopup()" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buildingModal">'+
+            '<button onclick="cerrarPopup();" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buildingModal">'+
                 'Añadir Estructura'+
             '</button>'+
         '</div>'
@@ -322,13 +322,13 @@ function CreatedBuildingOptions(e,map)
     selectedLayer = e.layer;
     var popupContent = 
         '<div class="btn-group-vertical" role="group" aria-label="sec group">'+
-            '<button onclick="removeBuild()" class="btn btn-secondary">'+
+            '<button onclick="removeBuild();cerrarPopup();" class="btn btn-secondary">'+
                 'Eliminar'+
             '</button>'+
-            '<button onclick="cerrarPopup()" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buildingModal">'+
+            '<button onclick="cerrarPopup();" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#buildingModal">'+
                 'Añadir Estructura'+
             '</button>'+
-            '<button onclick="BuildingEntrance()" class="btn btn-secondary">'+
+            '<button onclick="BuildingEntrance();cerrarPopup();" class="btn btn-secondary">'+
                 'Añadir entradas'+
             '</button>'+
         '</div>'
@@ -342,7 +342,6 @@ function CreatedBuildingOptions(e,map)
 //Funcion que añade o quita entradas a los edificios o salas
 function BuildingEntrance() 
 {
-    cerrarPopup()
     selectedBuild = selectedLayer;
     if (entrances) {
         UnckeckEntrance();
@@ -365,6 +364,7 @@ function BuildingEntrance()
         }
     });
     entrances=true;
+    routePoints.bringToFront();
 }
 //Funcion que desmarca las entradas 
 function UnckeckEntrance() 
@@ -397,6 +397,11 @@ function asociarEdificacionAEstructura()
     if (opcionSeleccionada==="0") {
         return;
     }
+    let existeEs = existeEstructura(opcionSeleccionada);
+    if (existeEs) {
+        alert('La edificacion ya existe esta en el mapa')
+        return;
+    }
     selectedLayer.options.feature = "newBuild";
     selectedLayer.options.id_value = parseInt(opcionSeleccionada);
     let selectedDict = buscar_diccionario_id(listaEdificacionesIniciales,parseInt(opcionSeleccionada))
@@ -417,6 +422,7 @@ function asociarEdificacionAEstructura()
     } else 
     {
         console.log("no lo añade al buildings");
+        alert("Se ha movido a la capa piso"+selectedDict.piso);
         buildStructures.removeLayer(selectedLayer);
         allBuildings.addLayer(selectedLayer);
     }
@@ -429,6 +435,11 @@ function EditarAsEdificacionAEstructura()
     let select = document.getElementById('selectorEdificacion');
     let opcionSeleccionada = select.options[select.selectedIndex].value;
     if (opcionSeleccionada==="0") {
+        return;
+    }
+    let existeEs = existeEstructura(opcionSeleccionada);
+    if (existeEs) {
+        alert('La edificacion ya existe esta en el mapa')
         return;
     }
     let selectedDict = buscar_diccionario_id(listaEdificacionesIniciales,parseInt(opcionSeleccionada))
@@ -455,6 +466,20 @@ function EditarAsEdificacionAEstructura()
     }
 }
 
+function existeEstructura(opcionSeleccionada) 
+{
+    opcion = parseInt(opcionSeleccionada);
+    let existe = allBuildings.getLayers().filter(function(layer) 
+    {
+        return layer.options.id_value === opcion || layer.options.new_id_value === opcion;
+    });
+    console.log(existe);
+    if (existe.length > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
 // funcion que permite eliminar una ruta del mapa
 function removeLine() 
 {
@@ -476,10 +501,13 @@ function removeLine()
 // funcion que permite eliminar una estructura del mapa
 function removeBuild() 
 {
-    cerrarPopup();
-    if (selectedLayer.options.feature === "newBuild")
+    if (!('feature' in selectedLayer.options)) {
+        buildStructures.removeLayer(selectedLayer);
+    }
+    else if (selectedLayer.options.feature === "newBuild")
     {
         buildings.removeLayer(selectedLayer);
+        allBuildings.removeLayer(selectedLayer);
     }
     else
     {
@@ -489,7 +517,50 @@ function removeBuild()
         //console.log(selectedLayer);
         //console.log(deletedLayers.getLayers());
     }
+    console.log(listaEntradas);
+    let lEntradasEliminar = [];
+    listaEntradas.forEach(entrada => {
+        if (entrada.edificio__id === selectedLayer.options.id_value || entrada.edificio__id === selectedLayer.options.new_id_value) 
+        {
+            console.log(entrada);
+            if (!('feature' in entrada)) {
+                entrada["feature"] = "delEntry";
+            } 
+            else
+            {
+                //let indice = listaEntradas.indexOf(entrada);
+                lEntradasEliminar.push(entrada);
+                /*
+                if (indice !== -1) 
+                {
+                    listaEntradas.splice(indice, 1);
+                }
+                */
+            }
+        }
+    });
+    //console.log(lEntradasEliminar);
+    //se eleminan las entradas newEntry de la lista
+    lEntradasEliminar.forEach(element => {
+        console.log(listaEntradas.indexOf(element));
+        let indice = listaEntradas.indexOf(element);
+        if (indice !== -1) 
+        {
+            listaEntradas.splice(indice, 1);
+        }
+    });
+    console.log(listaEntradas);
+    stopEntrance();
 }
+
+function stopEntrance() {
+    if (entrances) {
+        entrances = false;
+        selectedBuild = null;
+        UnckeckEntrance();
+    }
+}
+
 
 //funcion que encuentra el objeto de la lista
 function buscar_diccionario_id(lista, id) 
