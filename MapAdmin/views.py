@@ -13,6 +13,7 @@ import json
 from .forms import createEdificationForm,loginForm
 import math
 import heapq
+from haversine import haversine
 
 #pagina de login
 def login_page(request):
@@ -41,6 +42,7 @@ def index(request):
     pisos = list(Edificacion.objects.values_list('piso', flat=True).distinct())
     return render(request, 'indexAdmin.html',{'puntosMapa':puntosMapa,'lineasMapa':lineasMapa,'listaEdificaciones':listaEdificaciones,'estructurasMapa':estructurasMapa,'pisos':pisos,'listaEntradas':listaEntradas})
 
+#funcion que guarda los cambios del mapa
 @login_required(login_url="adminLogin")
 def saveData(request):
     if request.method == 'POST':
@@ -60,9 +62,8 @@ def saveData(request):
                 elif diccionario['feature'] == 'newPoly':
                     puntoUno = Punto.objects.get(lat = diccionario['lat1'],lon =diccionario['lon1'])
                     puntoDos = Punto.objects.get(lat = diccionario['lat2'],lon =diccionario['lon2'])
-                    
-                    #distancia = haversine(latitudUno, longitudUno, latitudDos, longitudDos)
-                    distancia = haversine(diccionario['lat1'], diccionario['lon1'], diccionario['lat2'], diccionario['lon2'])
+                    initDist= haversine((diccionario['lat1'], diccionario['lon1']), (diccionario['lat2'], diccionario['lon2']))*1000
+                    distancia = round(initDist,1)
                     linea = Linea(punto_inicio=puntoUno,punto_fin=puntoDos,peso=distancia)
                     linea.save()
                     #print("linea guardada")
@@ -104,6 +105,7 @@ def saveData(request):
                         print('No se encontro ningun objeto')
     return JsonResponse([],safe=False)
 
+#pagina de creacion de edificaciones
 @login_required(login_url="adminLogin")
 @require_http_methods(["GET", "POST"])
 def createEdificationPage(request):
@@ -118,6 +120,7 @@ def createEdificationPage(request):
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
 
+#pagina de edicion de edificaciones
 @login_required(login_url="adminLogin")
 @require_http_methods(["GET", "POST"])
 def updateEdificationPage(request,e_id):
@@ -133,7 +136,8 @@ def updateEdificationPage(request,e_id):
             return redirect('viewEdification')
     else:
         return HttpResponseNotAllowed(["GET", "POST"])
-    
+
+#funcion que borra la edificacion por boton
 @login_required(login_url="adminLogin")
 def deleteEdificationPage(request,e_id):
     objeto = get_object_or_404(Edificacion,id = e_id)
@@ -146,10 +150,12 @@ def deleteEdificationPage(request,e_id):
             #print('No se encontro ningun objeto')
             return redirect('viewEdification')
 
+#vista de edificaciones
 @login_required(login_url="adminLogin")
 def viewEdificationPage(request):
     return render(request, 'adminEdificationView.html')
 
+#funcion que actualiza la vista de ediciaciones
 @login_required(login_url="adminLogin")
 def viewEdificationPageList(request,name,option):
     query = Q()
@@ -202,50 +208,3 @@ def listaOrdenadaEstructuras():
 
     resultado = list(diccionario.values())
     return resultado
-
-# funcion que calcula la distancia entre coordenadas
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371000  # radio de la Tierra en metros
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    delta_phi = math.radians(lat2 - lat1)
-    delta_lambda = math.radians(lon2 - lon1)
-
-    a = math.sin(delta_phi / 2)**2 + \
-        math.cos(phi1) * math.cos(phi2) * \
-        math.sin(delta_lambda / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    resultado = latitudUno = round(R * c,1)
-    return resultado
-
-# funcion que calcula el camino
-def dijkstra(graph, start, end):
-    distances = {node: float('inf') for node in graph}
-    distances[start] = 0
-    queue = [(0, start)]
-    previous_nodes = {node: None for node in graph}
-    
-    while queue:
-        current_distance, current_node = heapq.heappop(queue)
-        
-        if current_node == end:
-            path = []
-            while current_node is not None:
-                path.append(current_node)
-                current_node = previous_nodes[current_node]
-            path.reverse()
-            return distances[end], path
-        
-        if current_distance > distances[current_node]:
-            continue
-        
-        for neighbor, weight in graph[current_node].items():
-            distance = current_distance + weight
-            
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                previous_nodes[neighbor] = current_node
-                heapq.heappush(queue, (distance, neighbor))
-    
-    return -1, []
